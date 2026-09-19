@@ -1,0 +1,3548 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IBS & Food Intolerance Tracker</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            },
+            canvas: '#0b0f19',
+            card: '#111827',
+            cardHover: '#172033',
+            borderSubtle: '#1f293d',
+            fodmapLow: '#10b981',
+            fodmapMed: '#f59e0b',
+            fodmapHigh: '#ef4444',
+            intolerance: '#a855f7'
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom scrollbar and aesthetics */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #243048; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #374768; }
+    .badge-high { background-color: rgba(239, 68, 68, 0.15); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-med { background-color: rgba(245, 158, 11, 0.15); color: #fcd34d; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-low { background-color: rgba(16, 185, 129, 0.15); color: #6ee7b7; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-avoid { background-color: rgba(168, 85, 247, 0.18); color: #d8b4fe; border: 1px solid rgba(168, 85, 247, 0.4); }
+  </style>
+</head>
+<body class="bg-[#0b0f19] text-slate-100 min-h-screen flex flex-col font-sans selection:bg-emerald-500/30">
+
+  <!-- TOP APP HEADER -->
+  <header class="sticky top-0 z-40 bg-[#0b0f19]/90 backdrop-blur border-b border-[#1f293d] px-4 lg:px-8 py-3">
+    <div class="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-teal-500/10 border border-emerald-500/30 flex items-center justify-center text-xl shadow-inner">
+          🌿
+        </div>
+        <div>
+          <h1 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+            GutWise
+            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-medium">IBS & Intolerance</span>
+          </h1>
+          <p class="text-xs text-slate-400">FODMAP Intelligence • Bristol Stool Tracker • Meal Timeline</p>
+        </div>
+      </div>
+
+      <!-- Quick Action Buttons & Tab Switcher for Desktop -->
+      <div class="flex items-center gap-2">
+        <a href="/api/download-standalone" download="index.html" target="_blank" title="Download Standalone index.html" class="px-2.5 py-1.5 rounded-lg bg-[#162032] hover:bg-[#202e48] border border-purple-500/30 text-purple-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>📦</span> <span class="hidden sm:inline">Download index.html</span>
+        </a>
+        <button id="btnQuickLogMeal" onclick="openMealModal()" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+          <span>🍽️</span> <span>Log Meal</span>
+        </button>
+        <button id="btnQuickLogBM" onclick="openStoolModal()" class="px-3.5 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+          <span>🚽</span> <span>Log Stool</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs Bar -->
+    <div class="max-w-7xl mx-auto mt-3 flex border-b border-[#1f293d] overflow-x-auto gap-1 text-sm font-medium">
+      <button onclick="switchTab('food')" id="tabBtn-food" class="tab-btn px-4 py-2 text-emerald-400 border-b-2 border-emerald-400 flex items-center gap-2 whitespace-nowrap font-semibold">
+        <span>🍽️</span> <span>Food Logging Diary</span>
+      </button>
+      <button onclick="switchTab('calendar')" id="tabBtn-calendar" class="tab-btn px-4 py-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap">
+        <span>📅</span> <span>Calendar & Timeline</span>
+      </button>
+      <button onclick="switchTab('analytics')" id="tabBtn-analytics" class="tab-btn px-4 py-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap">
+        <span>📊</span> <span>Health Trends & Correlation</span>
+      </button>
+      <button onclick="switchTab('stools')" id="tabBtn-stools" class="tab-btn px-4 py-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap">
+        <span>🚽</span> <span>Bristol Log</span>
+      </button>
+      <button onclick="switchTab('settings')" id="tabBtn-settings" class="tab-btn px-4 py-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap">
+        <span>⚙️</span> <span>Intolerances & Settings</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 lg:px-8 py-6">
+
+    <!-- TAB 1: FOOD LOGGING DIARY (MEALS, COMPONENTS, RECIPES) -->
+    <section id="tab-food" class="tab-view space-y-6">
+      <!-- Food Sub-tabs -->
+      <div class="flex items-center justify-between border-b border-[#1f293d] pb-3">
+        <div class="flex items-center gap-2">
+          <button onclick="setFoodSubTab('meals')" id="foodSubTab-meals" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white shadow-sm">Meals Diary</button>
+          <button onclick="setFoodSubTab('components')" id="foodSubTab-components" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#111827] text-slate-400 hover:text-white border border-[#1f293d]">Components & OCR</button>
+          <button onclick="setFoodSubTab('recipes')" id="foodSubTab-recipes" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#111827] text-slate-400 hover:text-white border border-[#1f293d]">Recipes</button>
+        </div>
+        <div id="foodSubActions">
+          <button onclick="openMealModal()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1 shadow-sm">
+            + Log Meal
+          </button>
+        </div>
+      </div>
+
+      <!-- Subview: Meals Diary -->
+      <div id="foodView-meals" class="space-y-4">
+        <div id="mealsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Subview: Components -->
+      <div id="foodView-components" class="hidden space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <p class="text-xs text-slate-400">Base food items and ingredients with dual-layer FODMAP & personal trigger scans</p>
+          <div id="componentCategoryFilterBar" class="flex flex-wrap gap-1.5 text-xs">
+            <!-- Populated by JS -->
+          </div>
+        </div>
+        <div id="componentsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Subview: Recipes -->
+      <div id="foodView-recipes" class="hidden space-y-4">
+        <div class="flex items-center justify-between">
+          <p class="text-xs text-slate-400">Compound meals composed of multiple components (e.g., Sandwich = Bread + Mayo + Ham)</p>
+        </div>
+        <div id="recipesList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 2: CALENDAR & TIMELINE -->
+    <section id="tab-calendar" class="tab-view hidden space-y-6">
+      <!-- Calendar Controls -->
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <h2 id="calendarTitle" class="text-lg font-bold text-white">September 2026</h2>
+          <div class="flex items-center bg-[#0b0f19] rounded-lg p-0.5 border border-[#1f293d]">
+            <button onclick="changeCalendarPeriod(-1)" class="px-2.5 py-1 text-slate-400 hover:text-white text-sm">◀</button>
+            <button onclick="goToToday()" class="px-3 py-1 text-xs text-slate-300 hover:text-white font-medium border-x border-[#1f293d]">Today</button>
+            <button onclick="changeCalendarPeriod(1)" class="px-2.5 py-1 text-slate-400 hover:text-white text-sm">▶</button>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <div class="bg-[#0b0f19] border border-[#1f293d] p-0.5 rounded-lg flex text-xs">
+            <button onclick="setCalendarMode('month')" id="calMode-month" class="px-3 py-1.5 rounded-md bg-emerald-600 text-white font-medium">Month</button>
+            <button onclick="setCalendarMode('week')" id="calMode-week" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white font-medium">Week</button>
+            <button onclick="setCalendarMode('day')" id="calMode-day" class="px-3 py-1.5 rounded-md text-slate-400 hover:text-white font-medium">Day</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar Legend -->
+      <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 px-1">
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Meal Logged</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span> Custom Trigger Eaten</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span> BM Type 3-4 (Normal)</span>
+        <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> BM Type 1-2 / 6-7 (Flare/Abnormal)</span>
+      </div>
+
+      <!-- Calendar Grid / View Container -->
+      <div id="calendarContainer" class="bg-[#111827] border border-[#1f293d] rounded-2xl p-4 overflow-hidden shadow-sm">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- TAB 2: ANALYTICS & TRENDS -->
+    <section id="tab-analytics" class="tab-view hidden space-y-6">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl font-bold text-white">Gut Health & Stool Consistency Analytics</h2>
+          <p class="text-xs text-slate-400 mt-0.5">Identify correlations between dietary intake and bowel movement variations</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-400">Timeframe:</span>
+          <select id="analyticsRange" onchange="renderAnalytics()" class="bg-[#111827] border border-[#1f293d] text-xs text-slate-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-emerald-500">
+            <option value="7">Last 7 Days</option>
+            <option value="30" selected>Last 30 Days</option>
+            <option value="90">Last 90 Days</option>
+            <option value="all">All Time</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- KPI Summary Cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Recorded Meals</p>
+          <p id="kpiTotalMeals" class="text-2xl font-bold text-white mt-1">0</p>
+          <p class="text-[11px] text-emerald-400 mt-1" id="kpiTriggerMeals">0 trigger warnings</p>
+        </div>
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Bowel Movements</p>
+          <p id="kpiTotalBM" class="text-2xl font-bold text-white mt-1">0</p>
+          <p class="text-[11px] text-slate-400 mt-1" id="kpiAvgPerDay">0 / day</p>
+        </div>
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Optimal Bristol % (Type 3-4)</p>
+          <p id="kpiOptimalPercent" class="text-2xl font-bold text-emerald-400 mt-1">0%</p>
+          <p class="text-[11px] text-slate-400 mt-1">Target: &gt; 70%</p>
+        </div>
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-4">
+          <p class="text-xs text-slate-400 font-medium">Top Correlated Trigger</p>
+          <p id="kpiTopTrigger" class="text-lg font-bold text-rose-400 truncate mt-1">None yet</p>
+          <p class="text-[11px] text-slate-400 mt-1">Preceding Bristol 1,2,6,7</p>
+        </div>
+      </div>
+
+      <!-- Chart 1: Bristol Stool Timeline -->
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="font-semibold text-white text-sm">Bristol Stool Scale Trend Over Time</h3>
+            <p class="text-xs text-slate-400">Optimal band is Type 3–4. Type 1–2 indicate constipation; Type 5–7 indicate loose/diarrhea.</p>
+          </div>
+          <span class="text-xs px-2 py-0.5 rounded bg-slate-800 text-slate-300">Types 1 to 7</span>
+        </div>
+        <div class="h-64 w-full">
+          <canvas id="chartBristolTimeline"></canvas>
+        </div>
+      </div>
+
+      <!-- Two Column Charts -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Chart 2: Consistency Distribution -->
+        <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-5 space-y-3">
+          <h3 class="font-semibold text-white text-sm">Stool Consistency Breakdown</h3>
+          <p class="text-xs text-slate-400">Ratio of Constipation vs. Normal vs. Diarrhea/Loose</p>
+          <div class="h-60 w-full flex items-center justify-center">
+            <canvas id="chartConsistencyDist"></canvas>
+          </div>
+        </div>
+
+        <!-- Chart 3: Food Trigger Correlation Timeline -->
+        <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-5 space-y-3">
+          <h3 class="font-semibold text-white text-sm">Dietary Triggers vs. Flare Discomfort</h3>
+          <p class="text-xs text-slate-400">High-FODMAP & Intolerance meals tracked alongside daily pain scores</p>
+          <div class="h-60 w-full">
+            <canvas id="chartFoodCorrelation"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: BRISTOL STOOL LOG -->
+    <section id="tab-stools" class="tab-view hidden space-y-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xl font-bold text-white">Bristol Stool Chart Records</h2>
+          <p class="text-xs text-slate-400">Clinical documentation of form, color, urgency, and visceral pain</p>
+        </div>
+        <button onclick="openStoolModal()" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold flex items-center gap-1.5">
+          + Record Bowel Movement
+        </button>
+      </div>
+
+      <!-- Bristol Scale Visual Quick Reference -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-3 text-center">
+          <div class="text-2xl">🌰</div>
+          <span class="text-xs font-bold text-rose-400">Type 1</span>
+          <p class="text-[10px] text-slate-400 mt-0.5">Separate hard lumps (severe constip.)</p>
+        </div>
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-3 text-center">
+          <div class="text-2xl">🥖</div>
+          <span class="text-xs font-bold text-rose-300">Type 2</span>
+          <p class="text-[10px] text-slate-400 mt-0.5">Lumpy sausage (mild constip.)</p>
+        </div>
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-3 text-center">
+          <div class="text-2xl">🌭</div>
+          <span class="text-xs font-bold text-emerald-400">Type 3</span>
+          <p class="text-[10px] text-slate-400 mt-0.5">Sausage with cracks (Normal)</p>
+        </div>
+        <div class="bg-[#111827] border border-emerald-500/40 rounded-xl p-3 text-center bg-emerald-500/5">
+          <div class="text-2xl">🐍</div>
+          <span class="text-xs font-bold text-emerald-300">Type 4 ★</span>
+          <p class="text-[10px] text-slate-400 mt-0.5">Smooth, soft snake (Ideal!)</p>
+        </div>
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-3 text-center">
+          <div class="text-2xl">🧆</div>
+          <span class="text-xs font-bold text-amber-400">Type 5</span>
+          <p class="text-[10px] text-slate-400 mt-0.5">Soft blobs, clear edges (low fiber)</p>
+        </div>
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-3 text-center">
+          <div class="text-2xl">🥣</div>
+          <span class="text-xs font-bold text-rose-400">Type 6</span>
+          <p class="text-[10px] text-slate-400 mt-0.5">Mushy, ragged pieces (diarrhea)</p>
+        </div>
+        <div class="bg-[#111827] border border-[#1f293d] rounded-xl p-3 text-center">
+          <div class="text-2xl">💧</div>
+          <span class="text-xs font-bold text-rose-500">Type 7</span>
+          <p class="text-[10px] text-slate-400 mt-0.5">Liquid, no solids (severe diarrhea)</p>
+        </div>
+      </div>
+
+      <!-- History List -->
+      <div id="stoolsList" class="space-y-3">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- TAB 5: INTOLERANCES & SETTINGS -->
+    <section id="tab-settings" class="tab-view hidden space-y-6">
+      <div>
+        <h2 class="text-xl font-bold text-white">Custom Intolerances & Settings</h2>
+        <p class="text-xs text-slate-400">Configure personal dietary trigger ingredients, Gemini OCR credentials, and backups</p>
+      </div>
+
+      <!-- Custom Avoid List Section -->
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <span>⚠️</span> <span>Personal Avoid Ingredients List</span>
+            </h3>
+            <p class="text-xs text-slate-400">Any scanned or logged ingredients containing these items will trigger a prominent alert.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <input type="text" id="newAvoidInput" placeholder="e.g. Histamine, Nightshades, Sulphites, Garlic, Gluten..." class="flex-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500" />
+          <button onclick="addAvoidIngredient()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold transition">
+            + Add To Avoid List
+          </button>
+        </div>
+
+        <!-- Tags List -->
+        <div id="avoidTagsContainer" class="flex flex-wrap gap-2 pt-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Food Categories Management Section -->
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+            <span>🏷️</span> <span>Food Categories</span>
+          </h3>
+          <p class="text-xs text-slate-400 mt-0.5">
+            Organize food components into categories. Add custom categories, rename existing ones, or remove unused categories:
+          </p>
+        </div>
+
+        <div class="flex gap-2">
+          <input type="text" id="newCategoryInput" placeholder="e.g. Snacks, Breakfast, Sauces, Supplements, Fermented..." class="flex-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" onkeydown="if(event.key==='Enter') addCategory()" />
+          <button onclick="addCategory()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+            <span>+</span> <span>Add Category</span>
+          </button>
+        </div>
+
+        <!-- Category Tags List -->
+        <div id="categoryTagsContainer" class="flex flex-wrap gap-2 pt-2">
+          <!-- Populated by JS -->
+        </div>
+      </div>
+
+      <!-- Gemini API Key & OCR Configuration Section -->
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-5 space-y-4">
+        <div class="flex items-center justify-between">
+          <div>
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+              <span>🔑</span> <span>Gemini Vision API OCR Key</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Enter your Gemini API key to perform direct browser label scanning (<code class="text-emerald-300">gemini-3.8-flash</code>). Key is stored safely in browser localStorage.
+            </p>
+          </div>
+          <span id="apiKeyStatusBadge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+            <span>Checking...</span>
+          </span>
+        </div>
+
+        <div class="space-y-2">
+          <div class="flex gap-2">
+            <div class="relative flex-1">
+              <input type="password" id="geminiApiKeyInput" placeholder="AIzaSy... (Gemini API Key)" class="w-full bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 font-mono" />
+              <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-2.5 top-2 text-slate-400 hover:text-white text-xs">
+                👁️
+              </button>
+            </div>
+            <button onclick="saveGeminiApiKeyFromSettings()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5">
+              <span>💾</span> <span>Save Key</span>
+            </button>
+            <button onclick="clearGeminiApiKeyFromSettings()" class="px-3 py-2 bg-[#1f293d] hover:bg-rose-950/60 hover:text-rose-300 text-slate-300 rounded-lg text-xs font-medium transition">
+              Clear
+            </button>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            <strong>Zero-Cost & Safe:</strong> In this environment, an integrated server route is active as a fallback. When running as a standalone <code class="text-purple-300">index.html</code> file on your computer, your personal API key enables camera/file OCR directly via Google's Gemini API.
+          </p>
+        </div>
+      </div>
+
+      <!-- Backup, Restore, and Standalone App Download -->
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-5 space-y-4">
+        <div>
+          <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+            <span>💾</span> <span>Data Management & Standalone File Export</span>
+          </h3>
+          <p class="text-xs text-slate-400 mt-1">
+            Your logs and database are stored safely in browser localStorage. You can export JSON backups or download the complete self-contained <code class="text-purple-300">index.html</code> to run 100% offline on any device.
+          </p>
+        </div>
+
+        <div class="p-4 bg-[#0b0f19] border border-purple-500/30 rounded-xl space-y-2.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-purple-300 flex items-center gap-1.5">
+              <span>📦</span> <span>Download Standalone Offline App (index.html)</span>
+            </span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-medium">Single File • Zero Dependencies</span>
+          </div>
+          <p class="text-[11px] text-slate-400">
+            Bundles the entire application, Monash FODMAP database, food categories, and stool tracker into a single <code class="text-purple-300">index.html</code> file that runs in any browser without needing a server:
+          </p>
+          <div class="flex flex-wrap gap-2 pt-1">
+            <!-- 1. Direct server download link (works across iframes via standard HTTP attachment) -->
+            <a href="/api/download-standalone" download="index.html" target="_blank" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-2 shadow-sm transition">
+              <span>⬇️</span> <span>Download Standalone index.html</span>
+            </a>
+
+            <!-- 2. Fallback in-app download handler -->
+            <button onclick="downloadSingleFileApp()" class="px-3.5 py-2 bg-[#1f293d] hover:bg-[#2b3954] text-slate-200 rounded-lg text-xs font-semibold flex items-center gap-2 transition">
+              <span>⚡</span> <span>Save to Computer</span>
+            </button>
+
+            <!-- 3. Copy Full HTML Modal for iframe sandboxes -->
+            <button onclick="showCopyCodeModal()" class="px-3.5 py-2 bg-[#162032] hover:bg-[#202e48] border border-[#1f293d] text-slate-300 hover:text-white rounded-lg text-xs font-medium flex items-center gap-2 transition">
+              <span>📋</span> <span>View / Copy HTML Code</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-3 pt-1">
+          <button onclick="exportDataJSON()" class="px-3.5 py-2 bg-[#1f293d] hover:bg-[#2b3954] text-white rounded-lg text-xs font-semibold flex items-center gap-2 transition">
+            <span>💾</span> <span>Export Backup (JSON)</span>
+          </button>
+
+          <label class="px-3.5 py-2 bg-[#1f293d] hover:bg-[#2b3954] text-white rounded-lg text-xs font-semibold flex items-center gap-2 cursor-pointer transition">
+            <span>📥</span> <span>Import Backup (JSON)</span>
+            <input type="file" id="importJsonInput" accept=".json" onchange="importDataJSON(event)" class="hidden" />
+          </label>
+
+          <button onclick="loadSampleDemoData(true)" class="px-3.5 py-2 bg-emerald-950/60 border border-emerald-600/40 text-emerald-300 hover:bg-emerald-900/60 rounded-lg text-xs font-semibold flex items-center gap-2 transition">
+            <span>🔄</span> <span>Reset to Sample Data</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODALS & TOAST CONTAINER -->
+  <div id="modalsContainer"></div>
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+  <!-- APPLICATION LOGIC -->
+  <script>
+// IBS & Food Intolerance Tracker - Core Engine
+// Vanilla JavaScript, LocalStorage persistence, Monash FODMAP logic & Chart.js
+
+// 1. BUILT-IN FODMAP DATABASE & SYNONYMS
+const FODMAP_DB = {
+  high: [
+    { name: 'garlic', group: 'Fructans', alt: ['garlic powder', 'garlic salt', 'garlic extract', 'allium'] },
+    { name: 'onion', group: 'Fructans', alt: ['onion powder', 'shallots', 'leeks', 'spring onion bulb', 'scallion white'] },
+    { name: 'wheat', group: 'Fructans', alt: ['wheat flour', 'semolina', 'couscous', 'spelt', 'durum'] },
+    { name: 'rye', group: 'Fructans', alt: ['rye flour', 'rye bread'] },
+    { name: 'barley', group: 'Fructans', alt: ['barley malt', 'malt extract'] },
+    { name: 'inulin', group: 'Fructans', alt: ['chicory root', 'chicory extract', 'fructooligosaccharides', 'fos'] },
+    { name: 'milk', group: 'Lactose', alt: ['cow milk', 'goat milk', 'condensed milk', 'evaporated milk', 'whey protein', 'milk powder', 'buttermilk'] },
+    { name: 'lactose', group: 'Lactose', alt: ['lactose monohydrate', 'dairy lactose'] },
+    { name: 'yogurt', group: 'Lactose', alt: ['yoghurt', 'greek yogurt regular', 'curd'] },
+    { name: 'soft cheese', group: 'Lactose', alt: ['ricotta', 'cottage cheese', 'mascarpone', 'cream cheese'] },
+    { name: 'apple', group: 'Fructose/Sorbitol', alt: ['apples', 'apple juice', 'apple cider', 'applesauce'] },
+    { name: 'pear', group: 'Fructose/Sorbitol', alt: ['pears', 'pear juice'] },
+    { name: 'watermelon', group: 'Fructose/Polyols', alt: [] },
+    { name: 'mango', group: 'Fructose', alt: [] },
+    { name: 'honey', group: 'Fructose', alt: ['clover honey', 'raw honey'] },
+    { name: 'high fructose corn syrup', group: 'Fructose', alt: ['hfcs', 'fructose syrup'] },
+    { name: 'agave', group: 'Fructose', alt: ['agave nectar', 'agave syrup'] },
+    { name: 'mushrooms', group: 'Mannitol', alt: ['button mushroom', 'portobello', 'cremini', 'shiitake'] },
+    { name: 'cauliflower', group: 'Mannitol', alt: [] },
+    { name: 'snow peas', group: 'Mannitol/Fructans', alt: ['sugar snap peas'] },
+    { name: 'cashews', group: 'GOS/Fructans', alt: ['cashew nut', 'cashew butter', 'cashew milk'] },
+    { name: 'pistachios', group: 'GOS/Fructans', alt: ['pistachio'] },
+    { name: 'black beans', group: 'GOS', alt: ['kidney beans', 'baked beans', 'soybeans mature', 'lentils large'] }
+  ],
+  medium: [
+    { name: 'avocado', group: 'Sorbitol', note: 'Limit to 30g' },
+    { name: 'broccoli heads', group: 'Fructans', note: 'Stalks are high, florets medium' },
+    { name: 'almonds', group: 'GOS', note: 'Safe under 10 nuts' },
+    { name: 'sweet potato', group: 'Mannitol', note: 'Safe up to 75g' },
+    { name: 'cherries', group: 'Fructose/Sorbitol', note: 'High in larger portions' },
+    { name: 'cabbage', group: 'Fructans/Sorbitol', note: 'Savoy or red cabbage' },
+    { name: 'oat milk', group: 'Fructans/GOS', note: 'Depending on processing' }
+  ],
+  low: [
+    { name: 'rice', group: 'Safe', alt: ['brown rice', 'white rice', 'basmati', 'rice flour', 'rice noodles'] },
+    { name: 'oats', group: 'Safe', alt: ['rolled oats', 'oatmeal', 'gluten-free oats'] },
+    { name: 'quinoa', group: 'Safe', alt: [] },
+    { name: 'potato', group: 'Safe', alt: ['potatoes', 'russet', 'red potato'] },
+    { name: 'carrot', group: 'Safe', alt: ['carrots'] },
+    { name: 'cucumber', group: 'Safe', alt: ['cucumbers'] },
+    { name: 'tomato', group: 'Safe', alt: ['tomatoes', 'roma tomato'] },
+    { name: 'bell pepper', group: 'Safe', alt: ['red bell pepper', 'green bell pepper', 'capsicum'] },
+    { name: 'spinach', group: 'Safe', alt: ['baby spinach', 'english spinach'] },
+    { name: 'kale', group: 'Safe', alt: [] },
+    { name: 'banana', group: 'Safe', alt: ['firm banana', 'unripe banana'] },
+    { name: 'blueberry', group: 'Safe', alt: ['blueberries'] },
+    { name: 'strawberry', group: 'Safe', alt: ['strawberries'] },
+    { name: 'orange', group: 'Safe', alt: ['navel orange', 'mandarin', 'clementine'] },
+    { name: 'grapes', group: 'Safe', alt: ['red grapes', 'green grapes'] },
+    { name: 'egg', group: 'Safe', alt: ['eggs', 'egg white', 'egg yolk'] },
+    { name: 'chicken', group: 'Safe', alt: ['chicken breast', 'poultry', 'turkey'] },
+    { name: 'beef', group: 'Safe', alt: ['steak', 'ground beef', 'mince'] },
+    { name: 'fish', group: 'Safe', alt: ['salmon', 'tuna', 'cod', 'shrimp'] },
+    { name: 'firm tofu', group: 'Safe', alt: ['tofu extra firm'] },
+    { name: 'olive oil', group: 'Safe', alt: ['extra virgin olive oil', 'rapeseed oil', 'sesame oil'] },
+    { name: 'cheddar cheese', group: 'Safe', alt: ['parmesan', 'swiss cheese', 'hard cheese'] },
+    { name: 'lactose-free milk', group: 'Safe', alt: ['lactose free'] },
+    { name: 'maple syrup', group: 'Safe', alt: ['pure maple syrup'] },
+    { name: 'mustard seeds', group: 'Safe', alt: ['mustard', 'dijon'] },
+    { name: 'vinegar', group: 'Safe', alt: ['cider vinegar', 'white vinegar'] },
+    { name: 'lactase', group: 'Enzyme (Safe)', alt: ['lactase enzyme', 'tilactase', 'beta-galactosidase'] }
+  ]
+};
+
+// 2. BRISTOL STOOL SCALE DEFINITIONS
+const BRISTOL_SCALE = {
+  1: { type: 1, name: 'Separate Hard Lumps', icon: '🌰', category: 'Constipation', color: '#ef4444', desc: 'Like nuts; hard to pass. Indicates slow transit and dehydration.' },
+  2: { type: 2, name: 'Lumpy Sausage', icon: '🥖', category: 'Constipation', color: '#f87171', desc: 'Sausage-shaped but lumpy. Mild constipation.' },
+  3: { type: 3, name: 'Sausage with Cracks', icon: '🌭', category: 'Normal', color: '#10b981', desc: 'Like a sausage with cracks on surface. Normal, healthy stool.' },
+  4: { type: 4, name: 'Smooth Soft Snake', icon: '🐍', category: 'Normal', color: '#059669', desc: 'Like a smooth soft snake. The gold standard ideal bowel movement!' },
+  5: { type: 5, name: 'Soft Blobs', icon: '🧆', category: 'Loose', color: '#f59e0b', desc: 'Soft blobs with clear-cut edges. Passed easily; can indicate low fiber.' },
+  6: { type: 6, name: 'Mushy Ragged Pieces', icon: '🥣', category: 'Diarrhea', color: '#f97316', desc: 'Fluffy pieces with ragged edges, a mushy stool. Mild diarrhea/flare.' },
+  7: { type: 7, name: 'Entirely Liquid', icon: '💧', category: 'Diarrhea', color: '#dc2626', desc: 'Watery, no solid pieces; entirely liquid. Severe diarrhea / acute flare.' }
+};
+
+// Default Food Categories & Custom Avoid list
+const DEFAULT_CATEGORIES = ['Condiment', 'Bakery', 'Produce', 'Dairy/Alt', 'Protein', 'Grain', 'Snack', 'Beverage', 'Other'];
+const DEFAULT_AVOIDS = ['Lactose', 'Gluten', 'Histamine', 'Garlic', 'Onion', 'Nightshades'];
+
+// Application Global State
+let appState = {
+  avoids: [],
+  categories: [...DEFAULT_CATEGORIES],
+  components: [],
+  recipes: [],
+  meals: [],
+  stools: [],
+  selectedCategoryFilter: 'all',
+  geminiApiKey: '',
+  calendarDate: new Date(),
+  calendarMode: 'month',
+  foodSubTab: 'meals'
+};
+
+// 3. DUAL-LAYER INGREDIENT ANALYSIS ENGINE
+function normalizeText(str) {
+  return (str || '').toLowerCase().trim();
+}
+
+// Check custom avoids against ingredient text
+function matchCustomAvoid(ingredientName, avoidList) {
+  const norm = normalizeText(ingredientName);
+  for (const avoid of avoidList) {
+    const avoidNorm = normalizeText(avoid);
+    if (!avoidNorm) continue;
+    // Check direct substring
+    if (norm.includes(avoidNorm)) {
+      return avoid;
+    }
+    // Specific clinical mappings
+    if (avoidNorm === 'lactose' && (norm.includes('milk') || norm.includes('whey') || norm.includes('cream') || norm.includes('dairy') || norm.includes('curd') || norm.includes('casein'))) {
+      if (!norm.includes('lactose-free') && !norm.includes('dairy-free')) return avoid;
+    }
+    if (avoidNorm === 'gluten' && (norm.includes('wheat') || norm.includes('barley') || norm.includes('rye') || norm.includes('spelt') || norm.includes('semolina') || norm.includes('flour'))) {
+      if (!norm.includes('gluten-free')) return avoid;
+    }
+    if (avoidNorm === 'nightshades' && (norm.includes('tomato') || norm.includes('potato') || norm.includes('eggplant') || norm.includes('paprika') || norm.includes('cayenne') || norm.includes('bell pepper') || norm.includes('chili'))) {
+      if (!norm.includes('sweet potato')) return avoid;
+    }
+    if (avoidNorm === 'histamine' && (norm.includes('fermented') || norm.includes('aged cheese') || norm.includes('cured') || norm.includes('salami') || norm.includes('sauerkraut') || norm.includes('wine') || norm.includes('canned tuna'))) {
+      return avoid;
+    }
+    if (avoidNorm === 'sulphites' && (norm.includes('sulfite') || norm.includes('sulphite') || norm.includes('e220') || norm.includes('e228') || norm.includes('dried apricot'))) {
+      return avoid;
+    }
+  }
+  return null;
+}
+
+// Check Monash FODMAP lookup
+function matchFodmapLevel(ingredientName) {
+  const norm = normalizeText(ingredientName);
+  
+  // 1. Check High FODMAP
+  for (const item of FODMAP_DB.high) {
+    if (norm.includes(item.name) || (item.alt && item.alt.some(a => norm.includes(a)))) {
+      return { level: 'high', group: item.group, match: item.name };
+    }
+  }
+  // 2. Check Medium FODMAP
+  for (const item of FODMAP_DB.medium) {
+    if (norm.includes(item.name) || (item.alt && item.alt.some(a => norm.includes(a)))) {
+      return { level: 'medium', group: item.group, match: item.name, note: item.note };
+    }
+  }
+  // 3. Check Low FODMAP
+  for (const item of FODMAP_DB.low) {
+    if (norm.includes(item.name) || (item.alt && item.alt.some(a => norm.includes(a)))) {
+      return { level: 'low', group: item.group, match: item.name };
+    }
+  }
+
+  // Fallback to neutral / low risk if simple whole food or spice
+  return { level: 'low', group: 'Unflagged', match: ingredientName };
+}
+
+// Check if ingredient list contains lactase enzyme
+function containsLactaseEnzyme(ingredientsArray) {
+  if (!ingredientsArray || !Array.isArray(ingredientsArray)) return false;
+  return ingredientsArray.some(ing => {
+    const norm = normalizeText(ing);
+    return norm.includes('lactase') || norm.includes('tilactase') || norm.includes('beta-galactosidase');
+  });
+}
+
+// Dual analysis for a single ingredient
+function analyzeSingleIngredient(ingredientName, avoidList, hasLactase = false) {
+  const customTrigger = matchCustomAvoid(ingredientName, avoidList || appState.avoids);
+  const fodmap = matchFodmapLevel(ingredientName);
+  
+  let fodmapLevel = fodmap.level;
+  let fodmapGroup = fodmap.group;
+  let fodmapNote = fodmap.note;
+  let lactaseNeutralized = false;
+  let activeCustomAvoid = customTrigger;
+
+  // Lactase canceling logic:
+  // If product contains lactase, cancel out the FODMAP danger of lactose
+  const norm = normalizeText(ingredientName);
+  const isLactose = (fodmap.group && fodmap.group.toLowerCase().includes('lactose')) || 
+    norm.includes('lactose') || 
+    (fodmap.match && normalizeText(fodmap.match).includes('lactose'));
+
+  if (hasLactase && isLactose) {
+    lactaseNeutralized = true;
+    fodmapLevel = 'low';
+    fodmapGroup = 'Lactose (Neutralized by Lactase)';
+    fodmapNote = 'Lactase enzyme cancels lactose FODMAP danger';
+    
+    // Also if user has Lactose on custom avoid list, clarify that lactase neutralizes it
+    if (activeCustomAvoid && normalizeText(activeCustomAvoid) === 'lactose') {
+      activeCustomAvoid = null;
+    }
+  }
+
+  return {
+    name: ingredientName.trim(),
+    customAvoid: activeCustomAvoid,
+    fodmapLevel,
+    fodmapGroup,
+    fodmapNote,
+    lactaseNeutralized
+  };
+}
+
+// Dual analysis for an entire ingredient array
+function analyzeAllIngredients(ingredientsArray, avoidList) {
+  const hasLactase = containsLactaseEnzyme(ingredientsArray);
+  const results = ingredientsArray.map(ing => analyzeSingleIngredient(ing, avoidList, hasLactase));
+  const hasAvoid = results.some(r => r.customAvoid);
+  const hasHigh = results.some(r => r.fodmapLevel === 'high');
+  const hasMed = results.some(r => r.fodmapLevel === 'medium');
+  const lactaseNeutralizedAny = results.some(r => r.lactaseNeutralized);
+
+  let overallSafety = 'low';
+  if (hasAvoid || hasHigh) overallSafety = 'high';
+  else if (hasMed) overallSafety = 'medium';
+
+  return {
+    items: results,
+    overallSafety,
+    hasLactase,
+    lactaseNeutralizedAny,
+    avoidTriggers: [...new Set(results.filter(r => r.customAvoid).map(r => r.customAvoid))],
+    highFodmaps: results.filter(r => r.fodmapLevel === 'high'),
+    medFodmaps: results.filter(r => r.fodmapLevel === 'medium')
+  };
+}
+
+// Generate HTML badges for an ingredient analysis result
+function renderIngredientBadge(analysis) {
+  let badges = '';
+  if (analysis.lactaseNeutralized) {
+    badges += `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 inline-flex items-center gap-1 shadow-sm" title="Lactase enzyme cancels lactose FODMAP danger">🟢 Lactose (Canceled by Lactase)</span> `;
+  } else {
+    if (analysis.customAvoid) {
+      badges += `<span class="badge-avoid px-2 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1 shadow-sm">⚠️ Contains ${escapeHtml(analysis.customAvoid)} (Avoid List!)</span> `;
+    }
+    if (analysis.fodmapLevel === 'high') {
+      badges += `<span class="badge-high px-2 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1">🔴 High FODMAP (${escapeHtml(analysis.fodmapGroup)})</span>`;
+    } else if (analysis.fodmapLevel === 'medium') {
+      badges += `<span class="badge-med px-2 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1">🟡 Medium FODMAP (${escapeHtml(analysis.fodmapGroup)})</span>`;
+    } else {
+      badges += `<span class="badge-low px-2 py-0.5 rounded-full text-[11px] font-semibold inline-flex items-center gap-1">🟢 Low FODMAP</span>`;
+    }
+  }
+  return badges;
+}
+
+function escapeHtml(str) {
+  return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+// 4. STORAGE MANAGEMENT
+const STORAGE_KEY = 'gutwise_ibs_tracker_data_v1';
+
+function saveToLocalStorage() {
+  const payload = {
+    avoids: appState.avoids,
+    categories: appState.categories,
+    components: appState.components,
+    recipes: appState.recipes,
+    meals: appState.meals,
+    stools: appState.stools,
+    geminiApiKey: appState.geminiApiKey
+  };
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (e) {
+    console.error('Failed to save to localStorage:', e);
+  }
+}
+
+function loadFromLocalStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      appState.avoids = data.avoids || [...DEFAULT_AVOIDS];
+      appState.categories = (data.categories && data.categories.length > 0) ? data.categories : [...DEFAULT_CATEGORIES];
+      appState.components = data.components || [];
+      appState.recipes = data.recipes || [];
+      appState.meals = data.meals || [];
+      appState.stools = data.stools || [];
+      appState.geminiApiKey = data.geminiApiKey || '';
+      return true;
+    }
+  } catch (e) {
+    console.warn('Error reading localStorage, loading demo data:', e);
+  }
+  return false;
+}
+
+// 5. SAMPLE DEMO DATA (5+ days of rich meals and bowel movements)
+function loadSampleDemoData(force = false) {
+  if (!force && loadFromLocalStorage()) {
+    return; // Loaded existing user data
+  }
+
+  const now = new Date();
+  const d = (daysAgo, hour = 12, min = 0) => {
+    const target = new Date(now);
+    target.setDate(target.getDate() - daysAgo);
+    target.setHours(hour, min, 0, 0);
+    return target.toISOString();
+  };
+
+  appState.avoids = ['Lactose', 'Gluten', 'Histamine', 'Garlic', 'Onion'];
+  appState.geminiApiKey = '';
+
+  appState.components = [
+    {
+      id: 'c1',
+      name: 'Vegan Mayo',
+      category: 'Condiment',
+      ingredients: ['Rapeseed oil', 'Mustard seeds', 'White vinegar', 'Starch', 'Salt', 'Sugar'],
+      notes: 'Egg-free, low FODMAP condiment'
+    },
+    {
+      id: 'c2',
+      name: 'Sourdough Spelt Bread',
+      category: 'Bakery',
+      ingredients: ['Spelt flour', 'Sourdough starter', 'Water', 'Sea salt'],
+      notes: 'Slow-fermented; low fructan content'
+    },
+    {
+      id: 'c3',
+      name: 'Roast Garlic Hummus',
+      category: 'Condiment',
+      ingredients: ['Chickpeas', 'Tahini', 'Garlic powder', 'Olive oil', 'Lemon juice', 'Cumin'],
+      notes: 'High in GOS and Fructans (Garlic)'
+    },
+    {
+      id: 'c4',
+      name: 'Grilled Herb Chicken',
+      category: 'Protein',
+      ingredients: ['Chicken breast', 'Olive oil', 'Rosemary', 'Thyme', 'Salt', 'Black pepper'],
+      notes: 'Zero FODMAP protein'
+    },
+    {
+      id: 'c5',
+      name: 'Cheddar Cheese Slice',
+      category: 'Dairy/Alt',
+      ingredients: ['Pasteurized cow milk', 'Cheese cultures', 'Salt', 'Enzymes'],
+      notes: 'Aged hard cheese - virtually lactose-free (<0.1g)'
+    },
+    {
+      id: 'c6',
+      name: 'Creamy Mushroom Pasta Sauce',
+      category: 'Condiment',
+      ingredients: ['Heavy cream', 'Button mushrooms', 'Garlic', 'Onion', 'Parmesan', 'Wheat thickener'],
+      notes: 'Trigger alert: High Lactose, Mannitol, Fructans & Gluten!'
+    }
+  ];
+
+  appState.recipes = [
+    {
+      id: 'r1',
+      name: 'Turkey Sourdough Sandwich',
+      componentIds: ['c1', 'c2', 'c5'],
+      customIngredients: ['Roast turkey breast', 'Cucumber slices', 'Baby spinach'],
+      notes: 'Safe low-FODMAP staple lunch'
+    },
+    {
+      id: 'r2',
+      name: 'Chicken Rice Bowl',
+      componentIds: ['c4'],
+      customIngredients: ['Jasmine rice', 'Steamed carrots', 'Zucchini', 'Soy sauce'],
+      notes: 'Soothing dinner for recovery'
+    }
+  ];
+
+  appState.meals = [
+    {
+      id: 'm1',
+      timestamp: d(3, 8, 30),
+      type: 'Breakfast',
+      name: 'Rolled Oats with Blueberries',
+      recipeId: null,
+      componentIds: [],
+      rawIngredients: ['Rolled oats', 'Lactose-free milk', 'Blueberries', 'Chia seeds', 'Maple syrup'],
+      notes: 'No discomfort, calm stomach'
+    },
+    {
+      id: 'm2',
+      timestamp: d(3, 13, 0),
+      type: 'Lunch',
+      name: 'Turkey Sourdough Sandwich',
+      recipeId: 'r1',
+      componentIds: ['c1', 'c2', 'c5'],
+      rawIngredients: ['Spelt bread', 'Vegan mayo', 'Cheddar', 'Turkey', 'Spinach'],
+      notes: 'Good energy, well tolerated'
+    },
+    {
+      id: 'm3',
+      timestamp: d(2, 19, 30),
+      type: 'Dinner',
+      name: 'Creamy Mushroom Pasta (Dining Out)',
+      recipeId: null,
+      componentIds: ['c6'],
+      rawIngredients: ['Wheat pasta', 'Heavy cream', 'Mushrooms', 'Garlic', 'Onion', 'Parmesan'],
+      notes: '⚠️ Intense bloating within 90 minutes; abdominal cramp 3/4'
+    },
+    {
+      id: 'm4',
+      timestamp: d(1, 9, 0),
+      type: 'Breakfast',
+      name: 'Plain Rice Porridge',
+      recipeId: null,
+      componentIds: [],
+      rawIngredients: ['White rice', 'Water', 'Salt', 'Firm tofu cubes'],
+      notes: 'Gentle bland food to recover'
+    },
+    {
+      id: 'm5',
+      timestamp: d(1, 13, 15),
+      type: 'Lunch',
+      name: 'Roast Garlic Hummus with Crackers',
+      recipeId: null,
+      componentIds: ['c3'],
+      rawIngredients: ['Chickpeas', 'Garlic', 'Wheat crackers'],
+      notes: 'Tested small portion of hummus; caused gas'
+    },
+    {
+      id: 'm6',
+      timestamp: d(0, 12, 30),
+      type: 'Lunch',
+      name: 'Chicken Rice Bowl',
+      recipeId: 'r2',
+      componentIds: ['c4'],
+      rawIngredients: ['Chicken breast', 'Jasmine rice', 'Carrots', 'Olive oil'],
+      notes: 'Feeling much better today'
+    }
+  ];
+
+  appState.stools = [
+    {
+      id: 's1',
+      timestamp: d(3, 9, 15),
+      bristolType: 4,
+      color: '#6B4423',
+      colorName: 'Normal Brown',
+      urgency: 'Normal',
+      pain: 0,
+      bloat: 0,
+      straining: 'None',
+      incomplete: false,
+      notes: 'Optimal healthy BM'
+    },
+    {
+      id: 's2',
+      timestamp: d(2, 23, 45),
+      bristolType: 6,
+      color: '#D4A313',
+      colorName: 'Yellowish',
+      urgency: 'Urgent',
+      pain: 3,
+      bloat: 4,
+      straining: 'None',
+      incomplete: true,
+      notes: 'Flare following restaurant creamy mushroom pasta'
+    },
+    {
+      id: 's3',
+      timestamp: d(2, 10, 0),
+      bristolType: 4,
+      color: '#6B4423',
+      colorName: 'Normal Brown',
+      urgency: 'Normal',
+      pain: 1,
+      bloat: 1,
+      straining: 'None',
+      incomplete: false,
+      notes: 'Morning BM before dinner flare'
+    },
+    {
+      id: 's4',
+      timestamp: d(1, 8, 30),
+      bristolType: 6,
+      color: '#6B4423',
+      colorName: 'Normal Brown',
+      urgency: 'Urgent',
+      pain: 2,
+      bloat: 3,
+      straining: 'None',
+      incomplete: false,
+      notes: 'Residual looseness and gas'
+    },
+    {
+      id: 's5',
+      timestamp: d(0, 8, 15),
+      bristolType: 3,
+      color: '#6B4423',
+      colorName: 'Normal Brown',
+      urgency: 'Normal',
+      pain: 0,
+      bloat: 0,
+      straining: 'Mild',
+      incomplete: false,
+      notes: 'Recovering nicely back toward normal'
+    }
+  ];
+
+  saveToLocalStorage();
+}
+
+// 6. GEMINI OCR LABEL SCANNER (DIRECT API CALL & FALLBACK ACCELERATION)
+async function analyzeImageWithGemini(base64Data, mimeType = 'image/jpeg') {
+  const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, '').trim();
+  const apiKey = (appState.geminiApiKey || localStorage.getItem('gemini_api_key') || '').trim();
+
+  // Strategy 1: If user configured a Gemini API Key, perform direct client-side call
+  if (apiKey) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    try {
+      const avoidsList = JSON.stringify(appState.avoids || []);
+      const promptText = `Extract all food product names and packaging ingredients from this image. Parse every ingredient into a clean array of ingredient names. Identify if any ingredient matches these custom avoid intolerances: ${avoidsList}. Return ONLY valid JSON with this exact schema: {"productName": "...", "ingredients": ["ingredient 1", "ingredient 2"]}`;
+
+      const directUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+      const directRes = await fetch(directUrl, {
+        method: 'POST',
+        signal: controller.signal,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                { text: promptText },
+                {
+                  inlineData: {
+                    mimeType: mimeType || 'image/jpeg',
+                    data: cleanBase64
+                  }
+                }
+              ]
+            }
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json'
+          }
+        })
+      });
+      clearTimeout(timeoutId);
+
+      if (directRes.ok) {
+        const data = await directRes.json();
+        const candidateText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (candidateText) {
+          try {
+            const parsed = JSON.parse(candidateText);
+            return {
+              productName: parsed.productName || '',
+              ingredients: Array.isArray(parsed.ingredients) ? parsed.ingredients : []
+            };
+          } catch (pe) {
+            console.warn('Could not parse Gemini JSON response, extracting text:', pe);
+          }
+        }
+      }
+    } catch (directErr) {
+      clearTimeout(timeoutId);
+      console.warn('Direct Gemini API call failed or blocked by iframe CORS, falling back to server route:', directErr);
+    }
+  }
+
+  // Strategy 2: Call server API route (/api/gemini/analyze) with 15-second safeguard timeout
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const serverRes = await fetch('/api/gemini/analyze', {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        imageBase64: cleanBase64,
+        mimeType,
+        customApiKey: apiKey || undefined
+      })
+    });
+    clearTimeout(timeoutId);
+
+    const contentType = serverRes.headers.get('content-type') || '';
+    if (!contentType.includes('application/json')) {
+      throw new Error('Server returned an unexpected response. Please use Built-in Food Auto-Lookup or type ingredients manually.');
+    }
+
+    if (!serverRes.ok) {
+      const errData = await serverRes.json().catch(() => ({}));
+      let errMsg = errData.error || `Server error (${serverRes.status})`;
+      if (typeof errMsg === 'string' && errMsg.startsWith('{')) {
+        try {
+          const parsedInner = JSON.parse(errMsg);
+          if (parsedInner.error?.message) {
+            errMsg = parsedInner.error.message;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      throw new Error(errMsg);
+    }
+
+    const data = await serverRes.json();
+    return data;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    if (err.name === 'AbortError') {
+      throw new Error('Label scanning timed out. Please try Auto-Lookup or type ingredients manually.');
+    }
+    throw err;
+  }
+}
+
+
+// 7. UI NAVIGATION & TABS
+function switchTab(tabId) {
+  document.querySelectorAll('.tab-view').forEach(el => el.classList.add('hidden'));
+  const target = document.getElementById(`tab-${tabId}`);
+  if (target) target.classList.remove('hidden');
+
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.className = 'tab-btn px-4 py-2 text-slate-400 hover:text-slate-200 border-b-2 border-transparent flex items-center gap-2 whitespace-nowrap transition';
+  });
+  const activeBtn = document.getElementById(`tabBtn-${tabId}`);
+  if (activeBtn) {
+    activeBtn.className = 'tab-btn px-4 py-2 text-emerald-400 border-b-2 border-emerald-400 flex items-center gap-2 whitespace-nowrap font-semibold';
+  }
+
+  if (tabId === 'calendar') renderCalendar();
+  if (tabId === 'analytics') renderAnalytics();
+  if (tabId === 'food') renderFoodLists();
+  if (tabId === 'stools') renderStoolsList();
+  if (tabId === 'settings') renderSettings();
+}
+
+function setFoodSubTab(subTab) {
+  appState.foodSubTab = subTab;
+  ['meals', 'components', 'recipes'].forEach(s => {
+    const view = document.getElementById(`foodView-${s}`);
+    const btn = document.getElementById(`foodSubTab-${s}`);
+    if (view) view.classList.toggle('hidden', s !== subTab);
+    if (btn) {
+      btn.className = s === subTab
+        ? 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 text-white shadow-sm'
+        : 'px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#111827] text-slate-400 hover:text-white border border-[#1f293d]';
+    }
+  });
+
+  const actionsContainer = document.getElementById('foodSubActions');
+  if (actionsContainer) {
+    if (subTab === 'meals') {
+      actionsContainer.innerHTML = `<button onclick="openMealModal()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1 shadow-sm">+ Log Meal</button>`;
+    } else if (subTab === 'components') {
+      actionsContainer.innerHTML = `<button onclick="openComponentModal()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1 shadow-sm">+ Add Component (or Scan)</button>`;
+    } else if (subTab === 'recipes') {
+      actionsContainer.innerHTML = `<button onclick="openRecipeModal()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1 shadow-sm">+ Create Recipe</button>`;
+    }
+  }
+
+  renderFoodLists();
+}
+
+// 8. DYNAMIC CALENDAR & TIMELINE ENGINE
+function setCalendarMode(mode) {
+  appState.calendarMode = mode;
+  ['month', 'week', 'day'].forEach(m => {
+    const btn = document.getElementById(`calMode-${m}`);
+    if (btn) {
+      btn.className = m === mode
+        ? 'px-3 py-1.5 rounded-md bg-emerald-600 text-white font-semibold'
+        : 'px-3 py-1.5 rounded-md text-slate-400 hover:text-white font-medium';
+    }
+  });
+  renderCalendar();
+}
+
+function changeCalendarPeriod(delta) {
+  const d = new Date(appState.calendarDate);
+  if (appState.calendarMode === 'month') {
+    d.setMonth(d.getMonth() + delta);
+  } else if (appState.calendarMode === 'week') {
+    d.setDate(d.getDate() + (delta * 7));
+  } else {
+    d.setDate(d.getDate() + delta);
+  }
+  appState.calendarDate = d;
+  renderCalendar();
+}
+
+function goToToday() {
+  appState.calendarDate = new Date();
+  renderCalendar();
+}
+
+function formatLocalDate(dateObj) {
+  const y = dateObj.getFullYear();
+  const m = String(dateObj.getMonth() + 1).padStart(2, '0');
+  const d = String(dateObj.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function renderCalendar() {
+  const container = document.getElementById('calendarContainer');
+  const titleEl = document.getElementById('calendarTitle');
+  if (!container) return;
+
+  const cur = new Date(appState.calendarDate);
+  const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  if (appState.calendarMode === 'month') {
+    titleEl.textContent = `${months[cur.getMonth()]} ${cur.getFullYear()}`;
+    renderMonthCalendar(container, cur);
+  } else if (appState.calendarMode === 'week') {
+    titleEl.textContent = `Week of ${cur.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    renderWeekCalendar(container, cur);
+  } else {
+    titleEl.textContent = cur.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+    renderDayCalendar(container, cur);
+  }
+}
+
+// Render Month View
+function renderMonthCalendar(container, date) {
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startOffset = firstDay.getDay(); // 0 = Sun
+  const totalDays = lastDay.getDate();
+
+  let html = `
+    <div class="grid grid-cols-7 gap-1 text-center text-xs font-semibold text-slate-400 pb-2 border-b border-[#1f293d]">
+      <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+    </div>
+    <div class="grid grid-cols-7 gap-2 pt-2">
+  `;
+
+  // Blank days before start
+  for (let i = 0; i < startOffset; i++) {
+    html += `<div class="min-h-[105px] rounded-xl bg-[#0b0f19]/40 border border-transparent opacity-30"></div>`;
+  }
+
+  const todayStr = formatLocalDate(new Date());
+
+  for (let day = 1; day <= totalDays; day++) {
+    const cellDate = new Date(year, month, day);
+    const dateStr = formatLocalDate(cellDate);
+    const isToday = (dateStr === todayStr);
+
+    // Get meals and stools for this date
+    const dayMeals = appState.meals.filter(m => m.timestamp.startsWith(dateStr));
+    const dayStools = appState.stools.filter(s => s.timestamp.startsWith(dateStr));
+
+    // Calculate daily safety badges
+    let mealIndicators = '';
+    dayMeals.forEach(meal => {
+      const ingAnalysis = analyzeAllIngredients(meal.rawIngredients || []);
+      const dotColor = ingAnalysis.avoidTriggers.length > 0 ? 'bg-purple-400' : (ingAnalysis.overallSafety === 'high' ? 'bg-rose-400' : 'bg-emerald-400');
+      mealIndicators += `
+        <div class="flex items-center gap-1 text-[11px] text-slate-300 truncate bg-[#0b0f19] px-1.5 py-0.5 rounded border border-[#1f293d]/80" title="${escapeHtml(meal.name)}">
+          <span class="w-1.5 h-1.5 rounded-full ${dotColor} flex-shrink-0"></span>
+          <span class="truncate">${escapeHtml(meal.name)}</span>
+        </div>
+      `;
+    });
+
+    let stoolIndicators = '';
+    dayStools.forEach(stool => {
+      const sInfo = BRISTOL_SCALE[stool.bristolType] || {};
+      const isBad = (stool.bristolType <= 2 || stool.bristolType >= 6);
+      const isWarn = (stool.bristolType === 5);
+      const badgeBg = isBad ? 'bg-rose-500/20 text-rose-300 border-rose-500/30' : (isWarn ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30');
+
+      stoolIndicators += `
+        <div class="text-[11px] px-1.5 py-0.5 rounded border flex items-center justify-between font-medium ${badgeBg}" title="Bristol Type ${stool.bristolType}: ${sInfo.name}">
+          <span>${sInfo.icon || '🚽'} T${stool.bristolType}</span>
+          <span class="text-[10px] text-slate-400">${formatTime(stool.timestamp)}</span>
+        </div>
+      `;
+    });
+
+    html += `
+      <div onclick="openDayTimelineModal('${dateStr}')" class="min-h-[115px] p-2 rounded-xl bg-[#0d1320] border ${isToday ? 'border-emerald-500 shadow-md shadow-emerald-950/40' : 'border-[#1f293d]'} hover:border-slate-500 cursor-pointer transition flex flex-col justify-between group">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-xs font-bold ${isToday ? 'text-emerald-400' : 'text-slate-300'} group-hover:text-white">${day}</span>
+            <span class="text-[10px] text-slate-500 group-hover:text-slate-400 font-mono">${dayMeals.length > 0 || dayStools.length > 0 ? `${dayMeals.length}M / ${dayStools.length}S` : ''}</span>
+          </div>
+          <div class="space-y-1">
+            ${mealIndicators}
+          </div>
+        </div>
+        <div class="mt-1 space-y-1">
+          ${stoolIndicators}
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// Render Week View
+function renderWeekCalendar(container, date) {
+  const current = new Date(date);
+  const startOfWeek = new Date(current);
+  startOfWeek.setDate(current.getDate() - current.getDay()); // Sunday
+
+  let html = `<div class="grid grid-cols-1 md:grid-cols-7 gap-3">`;
+
+  for (let i = 0; i < 7; i++) {
+    const dayDate = new Date(startOfWeek);
+    dayDate.setDate(startOfWeek.getDate() + i);
+    const dateStr = formatLocalDate(dayDate);
+    const dayMeals = appState.meals.filter(m => m.timestamp.startsWith(dateStr));
+    const dayStools = appState.stools.filter(s => s.timestamp.startsWith(dateStr));
+    const isToday = (dateStr === formatLocalDate(new Date()));
+
+    html += `
+      <div onclick="openDayTimelineModal('${dateStr}')" class="bg-[#0d1320] border ${isToday ? 'border-emerald-500' : 'border-[#1f293d]'} rounded-xl p-3 hover:border-slate-500 cursor-pointer transition min-h-[220px] flex flex-col">
+        <div class="border-b border-[#1f293d] pb-2 mb-2 flex items-center justify-between">
+          <span class="text-xs font-semibold ${isToday ? 'text-emerald-400' : 'text-slate-300'}">${dayDate.toLocaleDateString('en-US', { weekday: 'short', month: 'numeric', day: 'numeric' })}</span>
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-[#111827] text-slate-400">${dayMeals.length} meals</span>
+        </div>
+
+        <div class="flex-1 space-y-1.5 overflow-y-auto max-h-48 text-xs">
+          ${dayMeals.map(m => `
+            <div class="p-1.5 rounded bg-[#111827] border border-[#1f293d] text-[11px]">
+              <span class="text-slate-400 font-mono text-[10px]">${formatTime(m.timestamp)}</span>
+              <p class="font-medium text-slate-200 truncate">${escapeHtml(m.name)}</p>
+            </div>
+          `).join('')}
+
+          ${dayStools.map(s => {
+            const b = BRISTOL_SCALE[s.bristolType] || {};
+            return `
+              <div class="p-1.5 rounded bg-amber-950/30 border border-amber-500/20 text-[11px] flex items-center justify-between">
+                <span>${b.icon} T${s.bristolType} (${b.name})</span>
+                <span class="text-[10px] text-slate-400">${formatTime(s.timestamp)}</span>
+              </div>
+            `;
+          }).join('')}
+
+          ${dayMeals.length === 0 && dayStools.length === 0 ? `<p class="text-[11px] text-slate-500 italic text-center py-6">No logs</p>` : ''}
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// Render Single Day View
+function renderDayCalendar(container, date) {
+  const dateStr = formatLocalDate(date);
+  const meals = appState.meals.filter(m => m.timestamp.startsWith(dateStr));
+  const stools = appState.stools.filter(s => s.timestamp.startsWith(dateStr));
+
+  // Merge items into chronological timeline
+  const combined = [
+    ...meals.map(m => ({ kind: 'meal', time: m.timestamp, data: m })),
+    ...stools.map(s => ({ kind: 'stool', time: s.timestamp, data: s }))
+  ].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  if (combined.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-12 text-slate-400">
+        <div class="text-4xl mb-2">📅</div>
+        <p class="font-medium text-slate-300">No events logged for ${date.toLocaleDateString()}</p>
+        <p class="text-xs text-slate-500 mt-1">Use "+ Log Meal" or "+ Log Stool" above to record entries</p>
+      </div>
+    `;
+    return;
+  }
+
+  let html = `
+    <div class="relative border-l-2 border-[#1f293d] ml-4 space-y-6 my-2 pl-6">
+  `;
+
+  combined.forEach(item => {
+    if (item.kind === 'meal') {
+      const m = item.data;
+      const analysis = analyzeAllIngredients(m.rawIngredients || []);
+      html += `
+        <div class="relative group">
+          <div class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-emerald-500 border-4 border-[#111827]"></div>
+          <div class="bg-[#0d1320] border border-[#1f293d] rounded-xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-semibold text-emerald-400 font-mono">${formatTime(m.timestamp)} • ${m.type}</span>
+              <span class="text-xs text-slate-500">${m.recipeId ? 'Recipe' : 'Meal'}</span>
+            </div>
+            <h4 class="text-base font-bold text-white">${escapeHtml(m.name)}</h4>
+            ${m.notes ? `<p class="text-xs text-slate-300 italic mt-1">"${escapeHtml(m.notes)}"</p>` : ''}
+            <div class="mt-2 flex flex-wrap gap-1.5">
+              ${analysis.items.map(ing => renderIngredientBadge(ing)).join(' ')}
+            </div>
+          </div>
+        </div>
+      `;
+    } else {
+      const s = item.data;
+      const b = BRISTOL_SCALE[s.bristolType] || {};
+      html += `
+        <div class="relative group">
+          <div class="absolute -left-[31px] top-1.5 w-4 h-4 rounded-full bg-amber-500 border-4 border-[#111827]"></div>
+          <div class="bg-[#1a1412] border border-amber-500/30 rounded-xl p-4 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+              <span class="text-xs font-semibold text-amber-400 font-mono">${formatTime(s.timestamp)} • Bowel Movement</span>
+              <span class="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-medium">Urgency: ${s.urgency}</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-3xl">${b.icon}</span>
+              <div>
+                <h4 class="text-base font-bold text-white">Bristol Type ${s.bristolType}: ${b.name}</h4>
+                <p class="text-xs text-slate-400">${b.desc}</p>
+              </div>
+            </div>
+            <div class="mt-2 text-xs text-slate-300 flex flex-wrap gap-4 pt-2 border-t border-[#1f293d]/50">
+              <span>Pain: <strong class="${s.pain >= 2 ? 'text-rose-400' : 'text-slate-200'}">${s.pain}/4</strong></span>
+              <span>Bloating: <strong>${s.bloat}/4</strong></span>
+              <span>Color: <strong>${s.colorName}</strong></span>
+              ${s.notes ? `<span>Notes: <em>${escapeHtml(s.notes)}</em></span>` : ''}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+}
+
+// 9. ANALYTICS & TREND GRAPHS (CHART.JS)
+let chartBristolInst = null;
+let chartConsistencyInst = null;
+let chartFoodCorrInst = null;
+
+function renderAnalytics() {
+  const rangeVal = document.getElementById('analyticsRange')?.value || '30';
+  const now = new Date();
+  let filterDate = new Date(0); // all time default
+
+  if (rangeVal !== 'all') {
+    const days = parseInt(rangeVal, 10);
+    filterDate = new Date(now.getTime() - (days * 24 * 60 * 60 * 1000));
+  }
+
+  const filteredMeals = appState.meals.filter(m => new Date(m.timestamp) >= filterDate);
+  const filteredStools = appState.stools.filter(s => new Date(s.timestamp) >= filterDate);
+
+  // Compute KPIs
+  const totalMealsEl = document.getElementById('kpiTotalMeals');
+  const triggerMealsEl = document.getElementById('kpiTriggerMeals');
+  const totalBMEl = document.getElementById('kpiTotalBM');
+  const avgPerDayEl = document.getElementById('kpiAvgPerDay');
+  const optimalPercentEl = document.getElementById('kpiOptimalPercent');
+  const topTriggerEl = document.getElementById('kpiTopTrigger');
+
+  if (totalMealsEl) totalMealsEl.textContent = filteredMeals.length;
+  
+  let triggerCount = 0;
+  const triggerFrequencyMap = {};
+
+  filteredMeals.forEach(m => {
+    const analysis = analyzeAllIngredients(m.rawIngredients || []);
+    if (analysis.avoidTriggers.length > 0 || analysis.overallSafety === 'high') {
+      triggerCount++;
+      analysis.avoidTriggers.forEach(t => {
+        triggerFrequencyMap[t] = (triggerFrequencyMap[t] || 0) + 1;
+      });
+      analysis.highFodmaps.forEach(h => {
+        triggerFrequencyMap[h.name] = (triggerFrequencyMap[h.name] || 0) + 1;
+      });
+    }
+  });
+
+  if (triggerMealsEl) triggerMealsEl.textContent = `${triggerCount} trigger alerts`;
+  if (totalBMEl) totalBMEl.textContent = filteredStools.length;
+
+  const daySpan = rangeVal === 'all' ? 30 : parseInt(rangeVal, 10);
+  const avgBm = (filteredStools.length / (daySpan || 1)).toFixed(1);
+  if (avgPerDayEl) avgPerDayEl.textContent = `${avgBm} / day`;
+
+  const optimalStools = filteredStools.filter(s => s.bristolType === 3 || s.bristolType === 4).length;
+  const optimalRate = filteredStools.length > 0 ? Math.round((optimalStools / filteredStools.length) * 100) : 0;
+  if (optimalPercentEl) optimalPercentEl.textContent = `${optimalRate}%`;
+
+  // Determine top trigger correlated with flares
+  let topTriggerName = 'None identified';
+  let maxTriggerOccurrences = 0;
+  for (const [name, count] of Object.entries(triggerFrequencyMap)) {
+    if (count > maxTriggerOccurrences) {
+      maxTriggerOccurrences = count;
+      topTriggerName = name;
+    }
+  }
+  if (topTriggerEl) topTriggerEl.textContent = topTriggerName;
+
+  // Chart 1: Bristol Stool Timeline Line Chart
+  renderBristolTimelineChart(filteredStools);
+
+  // Chart 2: Consistency Breakdown Doughnut Chart
+  renderConsistencyChart(filteredStools);
+
+  // Chart 3: Food Trigger Correlation Timeline
+  renderCorrelationChart(filteredMeals, filteredStools);
+}
+
+function renderBristolTimelineChart(stools) {
+  const ctx = document.getElementById('chartBristolTimeline')?.getContext('2d');
+  if (!ctx) return;
+
+  if (chartBristolInst) {
+    chartBristolInst.destroy();
+  }
+
+  // Sort stools chronologically
+  const sorted = [...stools].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+
+  const labels = sorted.map(s => {
+    const d = new Date(s.timestamp);
+    return `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+  });
+
+  const dataPoints = sorted.map(s => s.bristolType);
+  const pointBgColors = sorted.map(s => {
+    if (s.bristolType <= 2) return '#ef4444'; // Constipation
+    if (s.bristolType >= 6) return '#dc2626'; // Diarrhea
+    if (s.bristolType === 5) return '#f59e0b'; // Loose
+    return '#10b981'; // Optimal
+  });
+
+  chartBristolInst = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels.length ? labels : ['No stool records'],
+      datasets: [
+        {
+          label: 'Bristol Type (1-7)',
+          data: dataPoints.length ? dataPoints : [null],
+          borderColor: '#10b981',
+          backgroundColor: 'rgba(16, 185, 129, 0.08)',
+          borderWidth: 2.5,
+          tension: 0.3,
+          fill: true,
+          pointBackgroundColor: pointBgColors,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 1.5,
+          pointRadius: 6,
+          pointHoverRadius: 9
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          min: 1,
+          max: 7,
+          ticks: {
+            stepSize: 1,
+            color: '#94a3b8',
+            callback: function(val) {
+              const types = {
+                1: '1: Severe Constip.',
+                2: '2: Mild Constip.',
+                3: '3: Normal',
+                4: '4: Ideal ★',
+                5: '5: Low Fiber',
+                6: '6: Diarrhea',
+                7: '7: Liquid'
+              };
+              return types[val] || val;
+            }
+          },
+          grid: { color: '#1e293b' }
+        },
+        x: {
+          ticks: { color: '#94a3b8', maxRotation: 45, autoSkip: true, maxTicksLimit: 12 },
+          grid: { color: '#1e293b' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: function(ctx) {
+              return ctx[0]?.label || '';
+            },
+            label: function(ctx) {
+              const idx = ctx.dataIndex;
+              const s = sorted[idx];
+              if (!s) return '';
+              const b = BRISTOL_SCALE[s.bristolType] || {};
+              return [
+                `Bristol Type ${s.bristolType}: ${b.name}`,
+                `Category: ${b.category}`,
+                `Urgency: ${s.urgency}`,
+                `Pain Score: ${s.pain}/4`,
+                s.notes ? `Note: ${s.notes}` : ''
+              ].filter(Boolean);
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderConsistencyChart(stools) {
+  const ctx = document.getElementById('chartConsistencyDist')?.getContext('2d');
+  if (!ctx) return;
+
+  if (chartConsistencyInst) {
+    chartConsistencyInst.destroy();
+  }
+
+  let constipation = 0; // Types 1, 2
+  let normal = 0;       // Types 3, 4
+  let diarrhea = 0;     // Types 5, 6, 7
+
+  stools.forEach(s => {
+    if (s.bristolType <= 2) constipation++;
+    else if (s.bristolType <= 4) normal++;
+    else diarrhea++;
+  });
+
+  const total = constipation + normal + diarrhea || 1;
+
+  chartConsistencyInst = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: [
+        `Constipated (Type 1-2) - ${Math.round((constipation / total) * 100)}%`,
+        `Normal / Ideal (Type 3-4) - ${Math.round((normal / total) * 100)}%`,
+        `Loose / Diarrhea (Type 5-7) - ${Math.round((diarrhea / total) * 100)}%`
+      ],
+      datasets: [
+        {
+          data: [constipation, normal, diarrhea],
+          backgroundColor: ['#ef4444', '#10b981', '#f59e0b'],
+          borderColor: '#111827',
+          borderWidth: 3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: { color: '#cbd5e1', font: { size: 11 }, boxWidth: 12, padding: 12 }
+        }
+      },
+      cutout: '65%'
+    }
+  });
+}
+
+function renderCorrelationChart(meals, stools) {
+  const ctx = document.getElementById('chartFoodCorrelation')?.getContext('2d');
+  if (!ctx) return;
+
+  if (chartFoodCorrInst) {
+    chartFoodCorrInst.destroy();
+  }
+
+  // Aggregate by calendar date
+  const dateMap = {};
+
+  // Group meals
+  meals.forEach(m => {
+    const d = m.timestamp.split('T')[0];
+    if (!dateMap[d]) dateMap[d] = { highFodmap: 0, customAvoid: 0, flarePoints: 0 };
+    const analysis = analyzeAllIngredients(m.rawIngredients || []);
+    if (analysis.avoidTriggers.length > 0) dateMap[d].customAvoid += analysis.avoidTriggers.length;
+    if (analysis.overallSafety === 'high') dateMap[d].highFodmap++;
+  });
+
+  // Group stools
+  stools.forEach(s => {
+    const d = s.timestamp.split('T')[0];
+    if (!dateMap[d]) dateMap[d] = { highFodmap: 0, customAvoid: 0, flarePoints: 0 };
+    // Score discomfort: abnormal type deviation + pain score
+    let score = s.pain || 0;
+    if (s.bristolType <= 2 || s.bristolType >= 6) score += 2;
+    dateMap[d].flarePoints = Math.max(dateMap[d].flarePoints, score);
+  });
+
+  const sortedDates = Object.keys(dateMap).sort();
+  const displayLabels = sortedDates.map(d => {
+    const parts = d.split('-');
+    return `${parts[1]}/${parts[2]}`;
+  });
+
+  const highFodmapCounts = sortedDates.map(d => dateMap[d].highFodmap);
+  const avoidCounts = sortedDates.map(d => dateMap[d].customAvoid);
+  const flareScores = sortedDates.map(d => dateMap[d].flarePoints);
+
+  chartFoodCorrInst = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: displayLabels.length ? displayLabels : ['No records'],
+      datasets: [
+        {
+          label: 'Avoid Triggers Eaten',
+          data: avoidCounts,
+          backgroundColor: '#a855f7',
+          stack: 'diet'
+        },
+        {
+          label: 'High FODMAP Foods',
+          data: highFodmapCounts,
+          backgroundColor: '#f87171',
+          stack: 'diet'
+        },
+        {
+          label: 'Stool Flare Discomfort (0-6)',
+          data: flareScores,
+          type: 'line',
+          borderColor: '#38bdf8',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 4,
+          pointBackgroundColor: '#38bdf8'
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          ticks: { color: '#94a3b8', stepSize: 1 },
+          grid: { color: '#1e293b' }
+        },
+        x: {
+          ticks: { color: '#94a3b8' },
+          grid: { color: '#1e293b' }
+        }
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: { color: '#cbd5e1', font: { size: 10 }, boxWidth: 10 }
+        }
+      }
+    }
+  });
+}
+
+// 10. FOOD LISTS RENDERING (MEALS, COMPONENTS, RECIPES)
+function renderFoodLists() {
+  if (appState.foodSubTab === 'meals') renderMealsList();
+  if (appState.foodSubTab === 'components') renderComponentsList();
+  if (appState.foodSubTab === 'recipes') renderRecipesList();
+}
+
+function renderMealsList() {
+  const container = document.getElementById('mealsList');
+  if (!container) return;
+
+  const sortedMeals = [...appState.meals].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  if (sortedMeals.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-12 text-slate-400 bg-[#111827] rounded-xl border border-[#1f293d]">
+        <div class="text-3xl mb-2">🍽️</div>
+        <p class="font-medium text-slate-300">No meals logged yet</p>
+        <p class="text-xs text-slate-500 mt-1">Tap "+ Log Meal" to record what you ate</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = sortedMeals.map(m => {
+    const analysis = analyzeAllIngredients(m.rawIngredients || []);
+    return `
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-4 shadow-sm hover:border-slate-600 transition flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">${m.type}</span>
+            <span class="text-xs text-slate-400 font-mono">${new Date(m.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${formatTime(m.timestamp)}</span>
+          </div>
+
+          <h3 class="text-base font-bold text-white mb-1">${escapeHtml(m.name)}</h3>
+
+          ${m.notes ? `<p class="text-xs text-slate-300 italic mb-2">"${escapeHtml(m.notes)}"</p>` : ''}
+
+          <div class="flex flex-wrap gap-1.5 my-2">
+            ${analysis.items.map(ing => renderIngredientBadge(ing)).join(' ')}
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#1f293d] flex items-center justify-between mt-3 text-xs">
+          <span class="text-slate-400 font-medium">${m.rawIngredients ? m.rawIngredients.length : 0} ingredients</span>
+          <div class="flex items-center gap-3">
+            <button onclick="openMealModal('${m.id}')" class="text-slate-300 hover:text-emerald-400 font-medium transition flex items-center gap-1"><span>✏️</span> Edit</button>
+            <button onclick="deleteMeal('${m.id}')" class="text-slate-500 hover:text-rose-400 transition">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderComponentCategoryFilters() {
+  const bar = document.getElementById('componentCategoryFilterBar');
+  if (!bar) return;
+  const current = appState.selectedCategoryFilter || 'all';
+  const allCount = appState.components.length;
+  
+  let html = `
+    <button onclick="setComponentCategoryFilter('all')" class="px-2.5 py-1 rounded-lg text-xs font-medium transition ${current === 'all' ? 'bg-emerald-600 text-white' : 'bg-[#111827] text-slate-300 hover:text-white border border-[#1f293d]'}">
+      All (${allCount})
+    </button>
+  `;
+  appState.categories.forEach(cat => {
+    const count = appState.components.filter(c => c.category === cat).length;
+    html += `
+      <button onclick="setComponentCategoryFilter('${escapeHtml(cat)}')" class="px-2.5 py-1 rounded-lg text-xs font-medium transition ${current === cat ? 'bg-emerald-600 text-white' : 'bg-[#111827] text-slate-300 hover:text-white border border-[#1f293d]'}">
+        ${escapeHtml(cat)} (${count})
+      </button>
+    `;
+  });
+  bar.innerHTML = html;
+}
+
+function setComponentCategoryFilter(cat) {
+  appState.selectedCategoryFilter = cat;
+  renderComponentsList();
+}
+
+function renderComponentsList() {
+  const container = document.getElementById('componentsList');
+  if (!container) return;
+
+  renderComponentCategoryFilters();
+
+  let filtered = appState.components;
+  if (appState.selectedCategoryFilter && appState.selectedCategoryFilter !== 'all') {
+    filtered = filtered.filter(c => c.category === appState.selectedCategoryFilter);
+  }
+
+  if (appState.components.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-12 text-slate-400 bg-[#111827] rounded-xl border border-[#1f293d]">
+        <div class="text-3xl mb-2">🥗</div>
+        <p class="font-medium text-slate-300">No food components added</p>
+        <p class="text-xs text-slate-500 mt-1">Scan packaging label photo with Gemini or create custom components</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-12 text-slate-400 bg-[#111827] rounded-xl border border-[#1f293d]">
+        <div class="text-3xl mb-2">🏷️</div>
+        <p class="font-medium text-slate-300">No components in category "${escapeHtml(appState.selectedCategoryFilter)}"</p>
+        <p class="text-xs text-slate-500 mt-1">Switch to "All" or add a new food item in this category</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = filtered.map(c => {
+    const analysis = analyzeAllIngredients(c.ingredients || []);
+    return `
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:border-slate-600 transition">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-medium">${escapeHtml(c.category || 'Food')}</span>
+            <span class="text-xs text-slate-400">${c.ingredients.length} items</span>
+          </div>
+
+          <h3 class="text-base font-bold text-white">${escapeHtml(c.name)}</h3>
+          ${c.notes ? `<p class="text-xs text-slate-400 mt-0.5 mb-2">${escapeHtml(c.notes)}</p>` : ''}
+
+          <div class="flex flex-wrap gap-1 mt-2">
+            ${analysis.items.map(ing => renderIngredientBadge(ing)).join(' ')}
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#1f293d] flex items-center justify-between mt-3 text-xs">
+          <button onclick="quickLogComponent('${c.id}')" class="text-emerald-400 hover:text-emerald-300 font-medium">+ Quick Log</button>
+          <div class="flex items-center gap-3">
+            <button onclick="openComponentModal('${c.id}')" class="text-slate-300 hover:text-emerald-400 font-medium transition flex items-center gap-1"><span>✏️</span> Edit</button>
+            <button onclick="deleteComponent('${c.id}')" class="text-slate-500 hover:text-rose-400 transition">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderRecipesList() {
+  const container = document.getElementById('recipesList');
+  if (!container) return;
+
+  if (appState.recipes.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full text-center py-12 text-slate-400 bg-[#111827] rounded-xl border border-[#1f293d]">
+        <div class="text-3xl mb-2">📖</div>
+        <p class="font-medium text-slate-300">No recipes created</p>
+        <p class="text-xs text-slate-500 mt-1">Combine multiple components into favorite meal recipes</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = appState.recipes.map(r => {
+    // Gather all ingredients from components + custom
+    const componentNames = (r.componentIds || []).map(cid => {
+      const c = appState.components.find(x => x.id === cid);
+      return c ? c.name : 'Unknown';
+    });
+
+    const allIngs = [];
+    (r.componentIds || []).forEach(cid => {
+      const c = appState.components.find(x => x.id === cid);
+      if (c && c.ingredients) allIngs.push(...c.ingredients);
+    });
+    if (r.customIngredients) allIngs.push(...r.customIngredients);
+
+    const analysis = analyzeAllIngredients(allIngs);
+
+    return `
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl p-4 shadow-sm flex flex-col justify-between hover:border-slate-600 transition">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] px-2 py-0.5 rounded bg-purple-950/40 text-purple-300 border border-purple-500/30 font-medium">Recipe</span>
+            <span class="text-xs text-slate-400">${componentNames.length} components</span>
+          </div>
+
+          <h3 class="text-base font-bold text-white">${escapeHtml(r.name)}</h3>
+          <p class="text-xs text-slate-400 mt-1"><strong>Components:</strong> ${componentNames.map(cn => escapeHtml(cn)).join(' + ')}</p>
+          ${r.notes ? `<p class="text-xs text-slate-300 italic mt-1">"${escapeHtml(r.notes)}"</p>` : ''}
+
+          <div class="flex flex-wrap gap-1.5 mt-3">
+            ${analysis.items.slice(0, 8).map(ing => renderIngredientBadge(ing)).join(' ')}
+            ${analysis.items.length > 8 ? `<span class="text-[10px] text-slate-400 self-center">+${analysis.items.length - 8} more</span>` : ''}
+          </div>
+        </div>
+
+        <div class="pt-3 border-t border-[#1f293d] flex items-center justify-between mt-3 text-xs">
+          <button onclick="quickLogRecipe('${r.id}')" class="text-emerald-400 hover:text-emerald-300 font-medium">+ Quick Log</button>
+          <div class="flex items-center gap-3">
+            <button onclick="openRecipeModal('${r.id}')" class="text-slate-300 hover:text-emerald-400 font-medium transition flex items-center gap-1"><span>✏️</span> Edit</button>
+            <button onclick="deleteRecipe('${r.id}')" class="text-slate-500 hover:text-rose-400 transition">Delete</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function formatTime(isoString) {
+  if (!isoString) return '';
+  const d = new Date(isoString);
+  return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// 11. BRISTOL STOOL LOG LIST
+function renderStoolsList() {
+  const container = document.getElementById('stoolsList');
+  if (!container) return;
+
+  const sorted = [...appState.stools].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+  if (sorted.length === 0) {
+    container.innerHTML = `
+      <div class="text-center py-12 text-slate-400 bg-[#111827] rounded-xl border border-[#1f293d]">
+        <div class="text-3xl mb-2">🚽</div>
+        <p class="font-medium text-slate-300">No bowel movements logged</p>
+        <p class="text-xs text-slate-500 mt-1">Tap "+ Record Bowel Movement" to track your stool consistency</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = sorted.map(s => {
+    const b = BRISTOL_SCALE[s.bristolType] || {};
+    const d = new Date(s.timestamp);
+    const dateFormatted = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+    const timeFormatted = formatTime(s.timestamp);
+
+    const isAbnormal = (s.bristolType <= 2 || s.bristolType >= 6);
+    const borderColor = isAbnormal ? 'border-rose-500/30 bg-[#161012]' : 'border-[#1f293d] bg-[#111827]';
+
+    return `
+      <div class="${borderColor} border rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-[#0b0f19] border border-[#1f293d] flex items-center justify-center text-2xl flex-shrink-0">
+            ${b.icon}
+          </div>
+          <div>
+            <div class="flex items-center gap-2 mb-0.5">
+              <span class="text-base font-bold text-white">Bristol Type ${s.bristolType}: ${b.name}</span>
+              <span class="text-[11px] px-2 py-0.5 rounded-full ${isAbnormal ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'} font-semibold">${b.category}</span>
+            </div>
+            <p class="text-xs text-slate-400">${b.desc}</p>
+
+            <div class="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-300">
+              <span class="font-mono text-slate-400">📅 ${dateFormatted} at ${timeFormatted}</span>
+              <span class="flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full border border-white/20 inline-block" style="background-color: ${s.color};"></span>
+                <span>${s.colorName || 'Brown'}</span>
+              </span>
+              <span>Urgency: <strong>${s.urgency || 'Normal'}</strong></span>
+              <span>Pain: <strong class="${s.pain >= 2 ? 'text-rose-400' : ''}">${s.pain}/4</strong></span>
+              <span>Bloating: <strong>${s.bloat}/4</strong></span>
+            </div>
+
+            ${s.notes ? `<p class="text-xs text-slate-300 italic mt-2">Notes: "${escapeHtml(s.notes)}"</p>` : ''}
+          </div>
+        </div>
+
+        <div class="flex md:flex-col items-center justify-end gap-2 flex-shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#1f293d]">
+          <button onclick="deleteStool('${s.id}')" class="text-xs text-slate-500 hover:text-rose-400 px-2 py-1 transition">Delete</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// 12. SETTINGS & INTOLERANCE MANAGEMENT
+function renderSettings() {
+  const container = document.getElementById('avoidTagsContainer');
+  if (container) {
+    container.innerHTML = appState.avoids.map(item => `
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-purple-950/60 border border-purple-500/40 text-purple-200 text-xs font-medium">
+        <span>⚠️ ${escapeHtml(item)}</span>
+        <button onclick="removeAvoidIngredient('${escapeHtml(item)}')" class="hover:text-white font-bold ml-1 text-sm">&times;</button>
+      </span>
+    `).join('');
+  }
+
+  renderCategoriesInSettings();
+
+  const keyInput = document.getElementById('geminiApiKeyInput');
+  const badge = document.getElementById('apiKeyStatusBadge');
+  const savedKey = appState.geminiApiKey || localStorage.getItem('gemini_api_key') || '';
+  if (keyInput) {
+    keyInput.value = savedKey;
+  }
+  if (badge) {
+    if (savedKey) {
+      badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-950/80 border border-emerald-500/40 text-emerald-400';
+      badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-emerald-400"></span> <span>Custom Key Saved</span>';
+    } else {
+      badge.className = 'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-800 text-slate-300 border border-slate-700';
+      badge.innerHTML = '<span class="w-2 h-2 rounded-full bg-slate-400"></span> <span>Using Integrated Fallback</span>';
+    }
+  }
+}
+
+function renderCategoriesInSettings() {
+  const container = document.getElementById('categoryTagsContainer');
+  if (!container) return;
+  if (!appState.categories || appState.categories.length === 0) {
+    container.innerHTML = '<span class="text-xs text-slate-500 italic">No categories yet. Add one above!</span>';
+    return;
+  }
+  container.innerHTML = appState.categories.map(cat => {
+    const usageCount = appState.components.filter(c => c.category === cat).length;
+    return `
+      <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-200 text-xs font-medium shadow-sm">
+        <span>🏷️ ${escapeHtml(cat)}</span>
+        <span class="text-[10px] text-emerald-400/80 bg-emerald-900/50 px-1.5 py-0.2 rounded-full">${usageCount}</span>
+        <button onclick="editCategory('${escapeHtml(cat)}')" title="Rename Category" class="hover:text-white ml-1 text-xs opacity-80 hover:opacity-100 transition">✏️</button>
+        <button onclick="removeCategory('${escapeHtml(cat)}')" title="Delete Category" class="hover:text-rose-300 font-bold ml-0.5 text-sm opacity-80 hover:opacity-100 transition">&times;</button>
+      </span>
+    `;
+  }).join('');
+}
+
+function addCategory(catName = null) {
+  const input = document.getElementById('newCategoryInput');
+  const val = (catName || input?.value || '').trim();
+  if (!val) return;
+  if (appState.categories.some(c => c.toLowerCase() === val.toLowerCase())) {
+    showToast(`Category "${val}" already exists!`, 'warning');
+    return;
+  }
+  appState.categories.push(val);
+  saveToLocalStorage();
+  if (input) input.value = '';
+  renderSettings();
+  renderFoodLists();
+  showToast(`Category "${val}" added!`, 'success');
+}
+
+function removeCategory(catName) {
+  const usageCount = appState.components.filter(c => c.category === catName).length;
+  if (usageCount > 0) {
+    const ok = confirm(`Category "${catName}" is assigned to ${usageCount} food component(s). Deleting it will re-categorize them to "Other". Continue?`);
+    if (!ok) return;
+    appState.components.forEach(c => {
+      if (c.category === catName) c.category = 'Other';
+    });
+    if (!appState.categories.includes('Other')) {
+      appState.categories.push('Other');
+    }
+  }
+  appState.categories = appState.categories.filter(c => c.toLowerCase() !== catName.toLowerCase());
+  if (appState.selectedCategoryFilter === catName) {
+    appState.selectedCategoryFilter = 'all';
+  }
+  saveToLocalStorage();
+  renderSettings();
+  renderFoodLists();
+  showToast(`Category "${catName}" removed.`, 'info');
+}
+
+function editCategory(oldCatName) {
+  const newName = prompt(`Enter new name for category "${oldCatName}":`, oldCatName);
+  if (!newName) return;
+  const trimmed = newName.trim();
+  if (!trimmed || trimmed.toLowerCase() === oldCatName.toLowerCase()) return;
+  if (appState.categories.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+    showToast(`Category "${trimmed}" already exists!`, 'warning');
+    return;
+  }
+  const idx = appState.categories.indexOf(oldCatName);
+  if (idx !== -1) {
+    appState.categories[idx] = trimmed;
+  }
+  appState.components.forEach(c => {
+    if (c.category === oldCatName) c.category = trimmed;
+  });
+  if (appState.selectedCategoryFilter === oldCatName) {
+    appState.selectedCategoryFilter = trimmed;
+  }
+  saveToLocalStorage();
+  renderSettings();
+  renderFoodLists();
+  showToast(`Renamed category to "${trimmed}"!`, 'success');
+}
+
+function saveGeminiApiKeyFromSettings() {
+  const input = document.getElementById('geminiApiKeyInput');
+  const key = (input?.value || '').trim();
+  appState.geminiApiKey = key;
+  if (key) {
+    localStorage.setItem('gemini_api_key', key);
+  } else {
+    localStorage.removeItem('gemini_api_key');
+  }
+  saveToLocalStorage();
+  renderSettings();
+  showToast(key ? 'Gemini API key saved to localStorage!' : 'Gemini API key cleared.', 'success');
+}
+
+function clearGeminiApiKeyFromSettings() {
+  const input = document.getElementById('geminiApiKeyInput');
+  if (input) input.value = '';
+  appState.geminiApiKey = '';
+  localStorage.removeItem('gemini_api_key');
+  saveToLocalStorage();
+  renderSettings();
+  showToast('Gemini API key cleared from browser storage.', 'info');
+}
+
+function toggleApiKeyVisibility() {
+  const input = document.getElementById('geminiApiKeyInput');
+  if (!input) return;
+  input.type = input.type === 'password' ? 'text' : 'password';
+}
+
+function addAvoidIngredient() {
+  const input = document.getElementById('newAvoidInput');
+  const val = (input?.value || '').trim();
+  if (!val) return;
+  if (!appState.avoids.some(a => a.toLowerCase() === val.toLowerCase())) {
+    appState.avoids.push(val);
+    saveToLocalStorage();
+    renderSettings();
+    input.value = '';
+  }
+}
+
+function removeAvoidIngredient(item) {
+  appState.avoids = appState.avoids.filter(a => a.toLowerCase() !== item.toLowerCase());
+  saveToLocalStorage();
+  renderSettings();
+}
+
+// Toast Notification Helper
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  const bgColors = {
+    success: 'bg-[#0f241a] border-emerald-500/50 text-emerald-200',
+    error: 'bg-[#291216] border-rose-500/50 text-rose-200',
+    info: 'bg-[#131d2e] border-blue-500/50 text-blue-200',
+    warning: 'bg-[#2a1d0c] border-amber-500/50 text-amber-200'
+  };
+  const icons = {
+    success: '✓',
+    error: '⚠️',
+    info: 'ℹ️',
+    warning: '⚡'
+  };
+
+  const styleClass = bgColors[type] || bgColors.info;
+  const icon = icons[type] || icons.info;
+
+  toast.className = `${styleClass} border rounded-xl p-3 shadow-2xl text-xs font-medium flex items-center gap-2.5 transition-all duration-300 transform translate-y-2 opacity-0 pointer-events-auto`;
+  toast.innerHTML = `
+    <span class="text-sm font-bold">${icon}</span>
+    <span class="flex-1">${escapeHtml(message)}</span>
+    <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white font-bold ml-2">&times;</button>
+  `;
+
+  container.appendChild(toast);
+
+  // Trigger enter animation
+  requestAnimationFrame(() => {
+    toast.classList.remove('translate-y-2', 'opacity-0');
+  });
+
+  setTimeout(() => {
+    toast.classList.add('opacity-0', 'translate-y-2');
+    setTimeout(() => toast.remove(), 300);
+  }, 4000);
+}
+
+function saveGeminiApiKey() {
+  const input = document.getElementById('geminiApiKeyInput');
+  const key = (input?.value || '').trim();
+  appState.geminiApiKey = key;
+  saveToLocalStorage();
+  showToast('Gemini API key saved to localStorage successfully!', 'success');
+}
+
+// Data Export / Import
+function exportDataJSON() {
+  const data = {
+    avoids: appState.avoids,
+    components: appState.components,
+    recipes: appState.recipes,
+    meals: appState.meals,
+    stools: appState.stools,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `gutwise_ibs_backup_${formatLocalDate(new Date())}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup JSON exported successfully!', 'success');
+}
+
+async function downloadSingleFileApp() {
+  try {
+    showToast('Starting standalone index.html download...', 'info');
+
+    // 1. Direct browser navigation to our server attachment endpoint
+    const link = document.createElement('a');
+    link.href = '/api/download-standalone';
+    link.download = 'index.html';
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => link.remove(), 1000);
+
+    showToast('Standalone index.html download started!', 'success');
+  } catch (err) {
+    console.warn('Direct link click failed, trying fallback:', err);
+    try {
+      let htmlText = '';
+      try {
+        const res = await fetch('/api/download-standalone');
+        if (res.ok) htmlText = await res.text();
+      } catch (fErr) {}
+      if (!htmlText) {
+        htmlText = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+      }
+      const blob = new Blob([htmlText], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'index.html';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        URL.revokeObjectURL(url);
+        a.remove();
+      }, 2000);
+      showToast('Standalone index.html downloaded!', 'success');
+    } catch (fallbackErr) {
+      showCopyCodeModal();
+    }
+  }
+}
+
+async function showCopyCodeModal() {
+  try {
+    showToast('Loading standalone HTML...', 'info');
+    let html = '';
+    try {
+      const res = await fetch('/api/download-standalone');
+      if (res.ok) html = await res.text();
+    } catch (netErr) {}
+    if (!html) {
+      html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    }
+    const container = document.getElementById('modalsContainer');
+    if (!container) return;
+    container.innerHTML = `
+      <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-[#111827] border border-[#1f293d] rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
+          <div class="flex items-center justify-between border-b border-[#1f293d] pb-3">
+            <h3 class="text-base font-bold text-white flex items-center gap-2">
+              <span>📦</span> <span>Download / Save Standalone index.html</span>
+            </h3>
+            <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+          </div>
+          <p class="text-xs text-slate-300">
+            If your browser blocks automatic downloads inside the preview iframe, use direct download or copy the code below:
+          </p>
+          <div class="flex flex-wrap gap-2">
+            <a href="/api/download-standalone" target="_blank" download="index.html" class="px-3.5 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm transition">
+              <span>⬇️</span> <span>Direct Download index.html</span>
+            </a>
+            <button onclick="copyStandaloneCode()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+              <span>📋</span> <span>Copy Full HTML to Clipboard</span>
+            </button>
+            <a href="/index.html" target="_blank" class="px-3.5 py-2 bg-[#1f293d] hover:bg-[#2b3954] text-slate-200 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+              <span>🔗</span> <span>Open in New Tab</span>
+            </a>
+          </div>
+          <textarea id="standaloneCodeTextarea" readonly class="w-full h-44 bg-[#0b0f19] border border-[#1f293d] rounded-lg p-2.5 text-[11px] font-mono text-slate-300 select-all"></textarea>
+        </div>
+      </div>
+    `;
+    const textarea = document.getElementById('standaloneCodeTextarea');
+    if (textarea) textarea.value = html;
+  } catch (e) {
+    showToast('Failed to load standalone HTML: ' + e.message, 'error');
+  }
+}
+
+function copyStandaloneCode() {
+  const textarea = document.getElementById('standaloneCodeTextarea');
+  if (textarea) {
+    textarea.select();
+    navigator.clipboard.writeText(textarea.value).then(() => {
+      showToast('Full standalone index.html copied! Paste and save as index.html on your computer.', 'success');
+    }).catch(() => {
+      document.execCommand('copy');
+      showToast('Copied to clipboard!', 'success');
+    });
+  }
+}
+
+function importDataJSON(e) {
+  const file = e.target?.files?.[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(evt) {
+    try {
+      const data = JSON.parse(evt.target.result);
+      if (data.components || data.meals || data.stools) {
+        appState.avoids = data.avoids || appState.avoids;
+        appState.components = data.components || [];
+        appState.recipes = data.recipes || [];
+        appState.meals = data.meals || [];
+        appState.stools = data.stools || [];
+        saveToLocalStorage();
+        showToast('Data restored successfully!', 'success');
+        switchTab('food');
+      } else {
+        showToast('Invalid backup file format', 'error');
+      }
+    } catch (err) {
+      showToast('Error parsing JSON backup file: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+}
+
+// 13. DELETE HANDLERS
+function deleteMeal(id) {
+  if (confirm('Delete this meal entry?')) {
+    appState.meals = appState.meals.filter(m => m.id !== id);
+    saveToLocalStorage();
+    renderFoodLists();
+    renderCalendar();
+  }
+}
+
+function deleteComponent(id) {
+  if (confirm('Delete this food component?')) {
+    appState.components = appState.components.filter(c => c.id !== id);
+    saveToLocalStorage();
+    renderFoodLists();
+  }
+}
+
+function deleteRecipe(id) {
+  if (confirm('Delete this recipe?')) {
+    appState.recipes = appState.recipes.filter(r => r.id !== id);
+    saveToLocalStorage();
+    renderFoodLists();
+  }
+}
+
+function deleteStool(id) {
+  if (confirm('Delete this bowel movement log?')) {
+    appState.stools = appState.stools.filter(s => s.id !== id);
+    saveToLocalStorage();
+    renderStoolsList();
+    renderCalendar();
+  }
+}
+
+function quickLogComponent(componentId) {
+  const c = appState.components.find(x => x.id === componentId);
+  if (!c) return;
+  openMealModal();
+  setTimeout(() => {
+    document.getElementById('mealNameInput').value = c.name;
+    document.getElementById('mealIngredientsInput').value = c.ingredients.join(', ');
+    updateMealPreview();
+  }, 50);
+}
+
+function quickLogRecipe(recipeId) {
+  const r = appState.recipes.find(x => x.id === recipeId);
+  if (!r) return;
+  openMealModal();
+  setTimeout(() => {
+    document.getElementById('mealNameInput').value = r.name;
+    const allIngs = [];
+    (r.componentIds || []).forEach(cid => {
+      const c = appState.components.find(x => x.id === cid);
+      if (c && c.ingredients) allIngs.push(...c.ingredients);
+    });
+    if (r.customIngredients) allIngs.push(...r.customIngredients);
+    document.getElementById('mealIngredientsInput').value = allIngs.join(', ');
+    updateMealPreview();
+  }, 50);
+}
+
+// 14. MODAL DIALOGS ENGINE
+function closeModal() {
+  const container = document.getElementById('modalsContainer');
+  if (container) container.innerHTML = '';
+}
+
+// A. MEAL LOG MODAL
+let editingMealId = null;
+
+function openMealModal(mealId = null) {
+  editingMealId = mealId;
+  const existing = mealId ? appState.meals.find(x => x.id === mealId) : null;
+
+  let localIso;
+  if (existing && existing.timestamp) {
+    const d = new Date(existing.timestamp);
+    localIso = new Date(d.getTime() - (d.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+  } else {
+    const now = new Date();
+    localIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+  }
+
+  const mealType = existing ? existing.type : 'Lunch';
+  const mealName = existing ? existing.name : '';
+  const mealIngs = existing ? (existing.rawIngredients || []).join(', ') : '';
+  const mealNotes = existing ? (existing.notes || '') : '';
+
+  const container = document.getElementById('modalsContainer');
+  container.innerHTML = `
+    <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+        <div class="flex items-center justify-between border-b border-[#1f293d] pb-3">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>${existing ? '✏️' : '🍽️'}</span> <span>${existing ? 'Edit Meal & Ingredients' : 'Log Meal Entry'}</span>
+          </h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <form id="mealForm" onsubmit="handleSaveMeal(event)" class="space-y-4">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-xs text-slate-300 font-medium">Meal Type</label>
+              <select id="mealTypeSelect" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white">
+                <option value="Breakfast" ${mealType === 'Breakfast' ? 'selected' : ''}>Breakfast</option>
+                <option value="Lunch" ${mealType === 'Lunch' ? 'selected' : ''}>Lunch</option>
+                <option value="Dinner" ${mealType === 'Dinner' ? 'selected' : ''}>Dinner</option>
+                <option value="Snack" ${mealType === 'Snack' ? 'selected' : ''}>Snack</option>
+                <option value="Beverage" ${mealType === 'Beverage' ? 'selected' : ''}>Beverage</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-300 font-medium">Date & Time</label>
+              <input type="datetime-local" id="mealTimestampInput" value="${localIso}" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" required />
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-300 font-medium">Meal / Food Name</label>
+            <input type="text" id="mealNameInput" value="${escapeHtml(mealName)}" placeholder="e.g. Turkey Sourdough Sandwich" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" required />
+          </div>
+
+          <!-- Flexible Image Input: Choose Photo or Live Mobile Camera -->
+          <div class="bg-[#0b0f19] border border-emerald-500/30 rounded-xl p-3 space-y-2.5">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+                <span>📷</span> <span>Scan Food Photo / Packaging Label (Gemini OCR)</span>
+              </span>
+              <span class="text-[10px] text-slate-400">File or Camera</span>
+            </div>
+            <p class="text-[11px] text-slate-400">Upload a label photo or snap a picture to auto-populate ingredients & badges:</p>
+            <div class="flex flex-wrap gap-2">
+              <label class="flex-1 min-w-[120px] px-3 py-2 bg-[#162032] hover:bg-[#202e48] border border-[#1f293d] rounded-lg text-xs font-medium text-slate-200 flex items-center justify-center gap-2 cursor-pointer transition">
+                <span>📁</span> <span>Choose Photo</span>
+                <input type="file" accept="image/*" onchange="handleMealImageInput(event)" class="hidden" />
+              </label>
+              <label class="flex-1 min-w-[120px] px-3 py-2 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-600/40 rounded-lg text-xs font-medium text-emerald-300 flex items-center justify-center gap-2 cursor-pointer transition">
+                <span>📸</span> <span>Take Photo</span>
+                <input type="file" accept="image/*" capture="environment" onchange="handleMealImageInput(event)" class="hidden" />
+              </label>
+            </div>
+            <div id="mealOcrStatus" class="hidden text-xs text-emerald-400 flex items-center gap-2 py-1"></div>
+          </div>
+
+          <!-- Quick pick from saved recipes or components -->
+          <div class="flex gap-2">
+            <select id="mealQuickPickSelect" onchange="applyQuickPick(this.value)" class="w-full bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-slate-300">
+              <option value="">-- Or populate from saved Component / Recipe --</option>
+              <optgroup label="Saved Recipes">
+                ${appState.recipes.map(r => `<option value="recipe:${r.id}">${escapeHtml(r.name)}</option>`).join('')}
+              </optgroup>
+              <optgroup label="Saved Components">
+                ${appState.components.map(c => `<option value="component:${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+              </optgroup>
+            </select>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-slate-300 font-medium">Ingredients (comma-separated)</label>
+              <span class="text-[10px] text-slate-400">Live dual-layer scanner</span>
+            </div>
+            <textarea id="mealIngredientsInput" oninput="updateMealPreview()" rows="3" placeholder="e.g. Sourdough bread, roasted turkey, mustard, garlic aioli, cheddar" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" required>${escapeHtml(mealIngs)}</textarea>
+          </div>
+
+          <!-- Live ingredient badges preview -->
+          <div id="mealAnalysisPreview" class="p-3 bg-[#0b0f19] rounded-xl border border-[#1f293d] min-h-[44px] flex flex-wrap gap-1.5 items-center">
+            <span class="text-xs text-slate-500">Type ingredients above to see live FODMAP & Intolerance analysis badges...</span>
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-300 font-medium">Notes / Post-Meal Sensations</label>
+            <input type="text" id="mealNotesInput" value="${escapeHtml(mealNotes)}" placeholder="e.g. Ate quickly; slight stomach gurgling" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" />
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-[#1f293d]">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg bg-[#1f293d] text-slate-300 hover:text-white text-xs font-semibold">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">${existing ? 'Update Meal Entry' : 'Save Meal Entry'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  if (mealIngs) {
+    updateMealPreview();
+  }
+}
+
+async function handleMealImageInput(e) {
+  const file = e.target?.files?.[0];
+  if (!file) return;
+
+  const statusEl = document.getElementById('mealOcrStatus');
+  if (statusEl) {
+    statusEl.innerHTML = `<span class="inline-block animate-spin text-sm">⏳</span> <span>Reading image with Gemini Vision AI (max 15s)...</span>`;
+    statusEl.classList.remove('hidden');
+  }
+
+  try {
+    const processedData = await compressAndResizeImage(file);
+    if (!processedData) {
+      throw new Error('Could not process photo format. Please try another image.');
+    }
+
+    const result = await analyzeImageWithGemini(processedData);
+
+    const nameInput = document.getElementById('mealNameInput');
+    if (result.productName && nameInput && !nameInput.value) {
+      nameInput.value = result.productName;
+    }
+
+    const ingInput = document.getElementById('mealIngredientsInput');
+    if (result.ingredients && Array.isArray(result.ingredients) && result.ingredients.length > 0) {
+      if (ingInput) {
+        ingInput.value = result.ingredients.join(', ');
+      }
+      updateMealPreview();
+      if (statusEl) {
+        statusEl.innerHTML = `<span class="text-emerald-400 font-semibold">✓ Extracted ${result.ingredients.length} ingredients from label!</span>`;
+      }
+      showToast(`Extracted ${result.ingredients.length} ingredients from label!`, 'success');
+    } else {
+      if (statusEl) {
+        statusEl.innerHTML = `<span class="text-amber-400">ℹ️ No clear ingredient text found on photo.</span>`;
+      }
+      showToast('No clear ingredients detected. You can type ingredients manually.', 'info');
+    }
+  } catch (err) {
+    console.error('Meal OCR error:', err);
+    if (statusEl) {
+      statusEl.innerHTML = `<span class="text-rose-400">⚠️ ${escapeHtml(err.message || 'Scanning timed out')}</span>`;
+    }
+    showToast(err.message || 'Image scanning timed out', 'warning');
+  }
+}
+
+function updateMealPreview() {
+  const text = document.getElementById('mealIngredientsInput')?.value || '';
+  const preview = document.getElementById('mealAnalysisPreview');
+  if (!preview) return;
+
+  const rawList = text.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+  if (rawList.length === 0) {
+    preview.innerHTML = `<span class="text-xs text-slate-500">Type ingredients above to see live FODMAP & Intolerance analysis badges...</span>`;
+    return;
+  }
+
+  const analysis = analyzeAllIngredients(rawList);
+  preview.innerHTML = analysis.items.map(ing => renderIngredientBadge(ing)).join(' ');
+}
+
+function applyQuickPick(val) {
+  if (!val) return;
+  const [type, id] = val.split(':');
+  if (type === 'recipe') {
+    const r = appState.recipes.find(x => x.id === id);
+    if (!r) return;
+    document.getElementById('mealNameInput').value = r.name;
+    const allIngs = [];
+    (r.componentIds || []).forEach(cid => {
+      const c = appState.components.find(x => x.id === cid);
+      if (c && c.ingredients) allIngs.push(...c.ingredients);
+    });
+    if (r.customIngredients) allIngs.push(...r.customIngredients);
+    document.getElementById('mealIngredientsInput').value = allIngs.join(', ');
+  } else if (type === 'component') {
+    const c = appState.components.find(x => x.id === id);
+    if (!c) return;
+    document.getElementById('mealNameInput').value = c.name;
+    document.getElementById('mealIngredientsInput').value = c.ingredients.join(', ');
+  }
+  updateMealPreview();
+}
+
+function handleSaveMeal(e) {
+  e.preventDefault();
+  const name = document.getElementById('mealNameInput').value.trim();
+  const type = document.getElementById('mealTypeSelect').value;
+  const timestamp = document.getElementById('mealTimestampInput').value;
+  const rawText = document.getElementById('mealIngredientsInput').value;
+  const notes = document.getElementById('mealNotesInput').value.trim();
+
+  const rawIngredients = rawText.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+
+  if (editingMealId) {
+    const idx = appState.meals.findIndex(x => x.id === editingMealId);
+    if (idx !== -1) {
+      appState.meals[idx] = {
+        ...appState.meals[idx],
+        name,
+        type,
+        timestamp: new Date(timestamp).toISOString(),
+        rawIngredients,
+        notes
+      };
+    }
+    editingMealId = null;
+  } else {
+    const newMeal = {
+      id: 'm_' + Date.now(),
+      name,
+      type,
+      timestamp: new Date(timestamp).toISOString(),
+      rawIngredients,
+      notes
+    };
+    appState.meals.unshift(newMeal);
+  }
+
+  saveToLocalStorage();
+  closeModal();
+  renderFoodLists();
+  renderCalendar();
+  renderAnalytics();
+}
+
+// B. BRISTOL STOOL LOG MODAL
+let selectedBristolType = 4;
+let selectedStoolColor = '#6B4423';
+let selectedColorName = 'Normal Brown';
+
+function openStoolModal() {
+  selectedBristolType = 4;
+  selectedStoolColor = '#6B4423';
+  selectedColorName = 'Normal Brown';
+
+  const now = new Date();
+  const localIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+
+  const container = document.getElementById('modalsContainer');
+  container.innerHTML = `
+    <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4 my-8">
+        <div class="flex items-center justify-between border-b border-[#1f293d] pb-3">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>🚽</span> <span>Record Bowel Movement</span>
+          </h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <form id="stoolForm" onsubmit="handleSaveStool(event)" class="space-y-4">
+          <div>
+            <label class="text-xs text-slate-300 font-medium">Date & Time</label>
+            <input type="datetime-local" id="stoolTimestampInput" value="${localIso}" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" required />
+          </div>
+
+          <!-- Bristol Stool Scale Selector (Types 1-7) -->
+          <div>
+            <label class="text-xs text-slate-300 font-medium mb-1.5 block">Bristol Stool Consistency (Select 1-7)</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              ${[1, 2, 3, 4, 5, 6, 7].map(t => {
+                const b = BRISTOL_SCALE[t];
+                const isSelected = (t === selectedBristolType);
+                return `
+                  <button type="button" onclick="selectBristolType(${t})" id="bristolCard-${t}" class="p-2.5 rounded-xl border text-left transition flex items-center gap-2.5 ${isSelected ? 'bg-emerald-950/50 border-emerald-500 shadow-sm' : 'bg-[#0b0f19] border-[#1f293d] hover:border-slate-500'}">
+                    <span class="text-2xl">${b.icon}</span>
+                    <div class="leading-tight">
+                      <div class="text-xs font-bold text-white">Type ${t}: ${b.name}</div>
+                      <div class="text-[10px] text-slate-400">${b.desc}</div>
+                    </div>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Stool Color Palette -->
+          <div>
+            <label class="text-xs text-slate-300 font-medium mb-1 block">Stool Color</label>
+            <div class="flex flex-wrap gap-2">
+              ${[
+                { hex: '#6B4423', name: 'Normal Brown' },
+                { hex: '#2B1D0C', name: 'Dark Brown / Black' },
+                { hex: '#C4B59D', name: 'Pale / Clay' },
+                { hex: '#D4A313', name: 'Yellow / Greasy' },
+                { hex: '#3C6E47', name: 'Green' },
+                { hex: '#9E2A2B', name: 'Red / Blood streak' }
+              ].map(c => `
+                <button type="button" onclick="selectColor('${c.hex}', '${c.name}')" id="colorBtn-${c.hex.replace('#', '')}" class="px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 text-xs text-slate-300 transition ${c.name === selectedColorName ? 'border-emerald-500 bg-emerald-950/40 font-semibold' : 'border-[#1f293d] bg-[#0b0f19]'}">
+                  <span class="w-3.5 h-3.5 rounded-full border border-white/20 inline-block" style="background-color: ${c.hex};"></span>
+                  <span>${c.name}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Clinical parameters: Urgency, Pain, Bloating -->
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="text-xs text-slate-300 font-medium">Urgency</label>
+              <select id="stoolUrgencySelect" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-2.5 py-2 text-xs text-white">
+                <option value="Normal">Normal</option>
+                <option value="Mild">Mild Urgency</option>
+                <option value="Urgent">Urgent (&lt;10m)</option>
+                <option value="Emergency">Emergency</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 font-medium">Abdominal Pain (0-4)</label>
+              <select id="stoolPainSelect" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-2.5 py-2 text-xs text-white">
+                <option value="0">0 - None</option>
+                <option value="1">1 - Mild</option>
+                <option value="2">2 - Moderate</option>
+                <option value="3">3 - Severe</option>
+                <option value="4">4 - Debilitating</option>
+              </select>
+            </div>
+
+            <div>
+              <label class="text-xs text-slate-300 font-medium">Bloat Score (0-4)</label>
+              <select id="stoolBloatSelect" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-2.5 py-2 text-xs text-white">
+                <option value="0">0 - Flat</option>
+                <option value="1">1 - Slight</option>
+                <option value="2">2 - Moderate</option>
+                <option value="3">3 - Distended</option>
+                <option value="4">4 - Painfully Tight</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-300 font-medium">Clinical Notes</label>
+            <input type="text" id="stoolNotesInput" placeholder="e.g. Straining, incomplete evacuation, mucus, gas..." class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" />
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-[#1f293d]">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg bg-[#1f293d] text-slate-300 hover:text-white text-xs font-semibold">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-semibold">Save BM Log</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+function selectBristolType(t) {
+  selectedBristolType = t;
+  [1, 2, 3, 4, 5, 6, 7].forEach(num => {
+    const card = document.getElementById(`bristolCard-${num}`);
+    if (card) {
+      if (num === t) {
+        card.className = 'p-2.5 rounded-xl border text-left transition flex items-center gap-2.5 bg-emerald-950/50 border-emerald-500 shadow-sm';
+      } else {
+        card.className = 'p-2.5 rounded-xl border text-left transition flex items-center gap-2.5 bg-[#0b0f19] border-[#1f293d] hover:border-slate-500';
+      }
+    }
+  });
+}
+
+function selectColor(hex, name) {
+  selectedStoolColor = hex;
+  selectedColorName = name;
+  [
+    { hex: '#6B4423', name: 'Normal Brown' },
+    { hex: '#2B1D0C', name: 'Dark Brown / Black' },
+    { hex: '#C4B59D', name: 'Pale / Clay' },
+    { hex: '#D4A313', name: 'Yellow / Greasy' },
+    { hex: '#3C6E47', name: 'Green' },
+    { hex: '#9E2A2B', name: 'Red / Blood streak' }
+  ].forEach(c => {
+    const btn = document.getElementById(`colorBtn-${c.hex.replace('#', '')}`);
+    if (btn) {
+      btn.className = c.name === name
+        ? 'px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 text-xs text-slate-300 transition border-emerald-500 bg-emerald-950/40 font-semibold'
+        : 'px-2.5 py-1.5 rounded-lg border flex items-center gap-1.5 text-xs text-slate-300 transition border-[#1f293d] bg-[#0b0f19]';
+    }
+  });
+}
+
+function handleSaveStool(e) {
+  e.preventDefault();
+  const timestamp = document.getElementById('stoolTimestampInput').value;
+  const urgency = document.getElementById('stoolUrgencySelect').value;
+  const pain = parseInt(document.getElementById('stoolPainSelect').value, 10);
+  const bloat = parseInt(document.getElementById('stoolBloatSelect').value, 10);
+  const notes = document.getElementById('stoolNotesInput').value.trim();
+
+  const newStool = {
+    id: 's_' + Date.now(),
+    timestamp: new Date(timestamp).toISOString(),
+    bristolType: selectedBristolType,
+    color: selectedStoolColor,
+    colorName: selectedColorName,
+    urgency,
+    pain,
+    bloat,
+    notes
+  };
+
+  appState.stools.unshift(newStool);
+  saveToLocalStorage();
+  closeModal();
+  renderStoolsList();
+  renderCalendar();
+  renderAnalytics();
+}
+
+// C. COMPONENT MODAL (WITH GEMINI CAMERA, OCR & AI AUTO-FILL)
+let capturedImageData = null;
+let editingComponentId = null;
+
+function openComponentModal(componentId = null) {
+  editingComponentId = componentId;
+  capturedImageData = null;
+  const existing = componentId ? appState.components.find(x => x.id === componentId) : null;
+
+  const compName = existing ? existing.name : '';
+  const compCategory = existing ? (existing.category || 'Condiment') : 'Condiment';
+  const compNotes = existing ? (existing.notes || '') : '';
+  const compIngredients = existing ? (existing.ingredients || []).join(', ') : '';
+
+  const container = document.getElementById('modalsContainer');
+  container.innerHTML = `
+    <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+        <div class="flex items-center justify-between border-b border-[#1f293d] pb-3">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>${existing ? '✏️' : '🥗'}</span> <span>${existing ? 'Edit Food Component' : 'Add Food Component'}</span>
+          </h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <!-- OPTIONAL: PHOTO OCR LABEL SCANNER (GEMINI AI) -->
+        <div class="bg-[#0b0f19] border border-emerald-500/30 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
+              <span>📷</span> <span>Option: Scan Label Photo with Gemini AI</span>
+            </span>
+            <span class="text-[10px] text-slate-400">Vision OCR</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Snap a photo of the nutrition/ingredients panel on packaging:</p>
+
+          <div class="flex flex-wrap gap-2">
+            <!-- 1. File Upload -->
+            <label class="flex-1 min-w-[130px] px-3 py-2 bg-[#162032] hover:bg-[#202e48] border border-[#1f293d] rounded-lg text-xs font-medium text-slate-200 flex items-center justify-center gap-2 cursor-pointer transition">
+              <span>📁</span> <span>Choose Photo</span>
+              <input type="file" accept="image/*" onchange="handleComponentImageInput(event)" class="hidden" />
+            </label>
+
+            <!-- 2. Live Mobile Camera Capture -->
+            <label class="flex-1 min-w-[130px] px-3 py-2 bg-emerald-950/60 hover:bg-emerald-900/60 border border-emerald-600/40 rounded-lg text-xs font-medium text-emerald-300 flex items-center justify-center gap-2 cursor-pointer transition">
+              <span>📸</span> <span>Take Photo</span>
+              <input type="file" accept="image/*" capture="environment" onchange="handleComponentImageInput(event)" class="hidden" />
+            </label>
+          </div>
+
+          <!-- Image Preview & Scan controls -->
+          <div id="ocrPreviewContainer" class="hidden space-y-2 pt-2 border-t border-[#1f293d]">
+            <div class="flex items-center gap-3">
+              <img id="ocrThumbnail" src="" alt="Captured label" class="w-14 h-14 object-cover rounded-lg border border-[#1f293d]" />
+              <div class="flex-1 text-xs">
+                <p id="ocrFileName" class="text-slate-300 font-medium truncate">Label photo ready</p>
+                <p id="ocrSubText" class="text-[11px] text-slate-400">Ready to scan ingredients</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" id="btnRunOcr" onclick="runGeminiOcr()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition flex items-center gap-1">
+                  <span>⚡</span> <span>Scan Label</span>
+                </button>
+              </div>
+            </div>
+            <div id="ocrScanningStatus" class="hidden text-xs text-emerald-400 flex items-center gap-2 py-1"></div>
+            <div id="ocrFeedback"></div>
+          </div>
+
+          <!-- API Key Info Dropdown / Note -->
+          <details class="text-[11px] text-slate-400 pt-1 border-t border-[#1f293d]/50">
+            <summary class="cursor-pointer hover:text-slate-300 font-medium flex items-center gap-1">
+              <span>🔑</span> <span>Is an API key needed? Click to check</span>
+            </summary>
+            <div class="mt-2 p-2.5 bg-[#111827] rounded-lg border border-[#1f293d] space-y-1.5">
+              <p class="text-[11px] text-slate-300">
+                <strong>No API key is required</strong> for FODMAP ratings, recipes, food categories, or stool tracking. All core features run completely offline in your browser!
+              </p>
+              <p class="text-[11px] text-slate-400">
+                For Photo Label Scanning: The AI Studio server provides the default Gemini key. If testing in an iframe where external requests are restricted, you can paste an optional personal Gemini API key here:
+              </p>
+              <div class="flex gap-1.5 pt-1">
+                <input type="password" id="modalGeminiKeyInput" placeholder="Optional: AI Studio / Gemini API Key" value="${escapeHtml(appState.geminiApiKey || '')}" class="flex-1 bg-[#0b0f19] border border-[#1f293d] rounded px-2 py-1 text-xs text-white" />
+                <button type="button" onclick="saveGeminiKeyFromModal()" class="px-2.5 py-1 bg-[#1f293d] hover:bg-[#2b3954] text-white text-xs rounded font-medium">Save</button>
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <form id="componentForm" onsubmit="handleSaveComponent(event)" class="space-y-4">
+          <div>
+            <label class="text-xs text-slate-300 font-medium">Component Name</label>
+            <input type="text" id="componentNameInput" value="${escapeHtml(compName)}" placeholder="e.g. Sourdough Bread, Dijon Mustard, Greek Yogurt, Hummus" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" required />
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <div class="flex items-center justify-between">
+                <label class="text-xs text-slate-300 font-medium">Category</label>
+                <button type="button" onclick="promptAddCategoryFromModal()" class="text-[10px] text-emerald-400 hover:text-emerald-300 font-medium">+ Add Category</button>
+              </div>
+              <select id="componentCategorySelect" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-emerald-500">
+                ${appState.categories.map(cat => `<option value="${escapeHtml(cat)}" ${compCategory === cat ? 'selected' : ''}>${escapeHtml(cat)}</option>`).join('')}
+              </select>
+            </div>
+            <div>
+              <label class="text-xs text-slate-300 font-medium">Notes / Brand</label>
+              <input type="text" id="componentNotesInput" value="${escapeHtml(compNotes)}" placeholder="e.g. Organic, brand name" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500" />
+            </div>
+          </div>
+
+          <!-- Stage 2: Ingredients & Live Monash FODMAP Identification -->
+          <div>
+            <div class="flex items-center justify-between">
+              <label class="text-xs text-slate-300 font-medium">Ingredients (comma-separated)</label>
+              <span class="text-[10px] text-emerald-400 font-medium">Stage 2: Live FODMAP check</span>
+            </div>
+            <textarea id="componentIngredientsInput" oninput="updateComponentPreview()" rows="3" placeholder="e.g. Rapeseed oil, mustard seeds, vinegar, starch, salt, sugar" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500" required>${escapeHtml(compIngredients)}</textarea>
+          </div>
+
+          <!-- Live preview of badges -->
+          <div>
+            <div class="flex items-center justify-between">
+              <span class="text-[11px] text-slate-400 font-medium">FODMAP & Sensitivity Badges:</span>
+              <span class="text-[10px] text-slate-500">Live Monash classification</span>
+            </div>
+            <div id="compAnalysisPreview" class="mt-1 p-3 bg-[#0b0f19] rounded-xl border border-[#1f293d] min-h-[44px] flex flex-wrap gap-1.5 items-center">
+              <span class="text-xs text-slate-500">Ingredient badges will appear here...</span>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-[#1f293d]">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg bg-[#1f293d] text-slate-300 hover:text-white text-xs font-semibold">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">${existing ? 'Update Component' : 'Save Component'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  if (compIngredients) {
+    updateComponentPreview();
+  }
+}
+
+function promptAddCategoryFromModal() {
+  const newCat = prompt('Enter new food category name (e.g., Breakfast, Sauces, Snacks, Bakery):');
+  if (!newCat) return;
+  const trimmed = newCat.trim();
+  if (!trimmed) return;
+  if (!appState.categories.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+    appState.categories.push(trimmed);
+    saveToLocalStorage();
+    renderSettings();
+    renderFoodLists();
+  }
+  const sel = document.getElementById('componentCategorySelect');
+  if (sel) {
+    sel.innerHTML = appState.categories.map(c => `<option value="${escapeHtml(c)}" ${c.toLowerCase() === trimmed.toLowerCase() ? 'selected' : ''}>${escapeHtml(c)}</option>`).join('');
+    sel.value = appState.categories.find(c => c.toLowerCase() === trimmed.toLowerCase()) || trimmed;
+  }
+  showToast(`Category "${trimmed}" added!`, 'success');
+}
+
+function saveGeminiKeyFromModal() {
+  const input = document.getElementById('modalGeminiKeyInput');
+  const key = (input?.value || '').trim();
+  appState.geminiApiKey = key;
+  saveToLocalStorage();
+  showToast(key ? 'Custom Gemini API Key saved to localStorage!' : 'Custom key cleared. Using server key.', 'success');
+}
+
+function compressAndResizeImage(file, maxDim = 800, quality = 0.72) {
+  return new Promise((resolve) => {
+    let finished = false;
+    const finish = (result) => {
+      if (!finished) {
+        finished = true;
+        resolve(result);
+      }
+    };
+
+    // 4-second safety fallback: never leave promise hanging
+    setTimeout(() => {
+      if (!finished) {
+        console.warn('Image processing reached timeout safeguard');
+        finish(null);
+      }
+    }, 4000);
+
+    // Fast path: modern browser createImageBitmap
+    if (typeof createImageBitmap === 'function') {
+      createImageBitmap(file)
+        .then((bitmap) => {
+          try {
+            let width = bitmap.width;
+            let height = bitmap.height;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(bitmap, 0, 0, width, height);
+            bitmap.close?.();
+            finish(canvas.toDataURL('image/jpeg', quality));
+          } catch (e) {
+            fallbackWithReader();
+          }
+        })
+        .catch(() => fallbackWithReader());
+      return;
+    }
+
+    fallbackWithReader();
+
+    function fallbackWithReader() {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
+        const img = new Image();
+        img.onload = () => {
+          try {
+            let width = img.width;
+            let height = img.height;
+            if (width > maxDim || height > maxDim) {
+              if (width > height) {
+                height = Math.round((height * maxDim) / width);
+                width = maxDim;
+              } else {
+                width = Math.round((width * maxDim) / height);
+                height = maxDim;
+              }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            finish(canvas.toDataURL('image/jpeg', quality));
+          } catch (e) {
+            finish(evt.target.result);
+          }
+        };
+        img.onerror = () => finish(evt.target.result);
+        img.src = evt.target.result;
+      };
+      reader.onerror = () => finish(null);
+      reader.readAsDataURL(file);
+    }
+  });
+}
+
+async function handleComponentImageInput(e) {
+  const file = e.target?.files?.[0];
+  if (!file) return;
+
+  const previewContainer = document.getElementById('ocrPreviewContainer');
+  const thumb = document.getElementById('ocrThumbnail');
+  const fileName = document.getElementById('ocrFileName');
+  const subText = document.getElementById('ocrSubText');
+  const feedbackEl = document.getElementById('ocrFeedback');
+  const statusEl = document.getElementById('ocrScanningStatus');
+  const btn = document.getElementById('btnRunOcr');
+
+  if (feedbackEl) feedbackEl.innerHTML = '';
+  if (statusEl) statusEl.classList.add('hidden');
+
+  if (previewContainer && fileName) {
+    previewContainer.classList.remove('hidden');
+    fileName.textContent = 'Processing photo...';
+    if (subText) subText.textContent = 'Preparing image...';
+  }
+
+  try {
+    const processedData = await compressAndResizeImage(file);
+    if (!processedData) {
+      throw new Error('Could not process photo format. Please try another image.');
+    }
+    capturedImageData = processedData;
+
+    if (thumb) thumb.src = capturedImageData;
+    if (fileName) fileName.textContent = file.name || 'Photo loaded';
+    if (subText) subText.textContent = 'Photo ready! Click "Scan Label" to read ingredients';
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    showToast('Photo loaded! Click "Scan Label" to read ingredients with Gemini AI.', 'info');
+  } catch (err) {
+    console.error('Photo load error:', err);
+    if (fileName) fileName.textContent = 'Failed to load photo';
+    if (subText) subText.textContent = 'Please try another photo';
+    if (statusEl) statusEl.classList.add('hidden');
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+    showToast(err.message || 'Could not load photo', 'error');
+  }
+}
+
+async function runGeminiOcr() {
+  if (!capturedImageData) {
+    showToast('Please select or take a label photo first', 'warning');
+    return;
+  }
+  const statusEl = document.getElementById('ocrScanningStatus');
+  const btn = document.getElementById('btnRunOcr');
+  const feedbackEl = document.getElementById('ocrFeedback');
+  const subText = document.getElementById('ocrSubText');
+
+  if (feedbackEl) feedbackEl.innerHTML = '';
+  if (subText) subText.textContent = 'Connecting to Gemini Vision AI...';
+  if (statusEl) {
+    statusEl.innerHTML = `<span class="inline-block animate-spin text-sm">⏳</span> <span>Stage 1: Contacting Gemini AI to read label ingredients (max 7s)...</span>`;
+    statusEl.classList.remove('hidden');
+  }
+  if (btn) {
+    btn.disabled = true;
+    btn.classList.add('opacity-50', 'cursor-not-allowed');
+  }
+
+  try {
+    // Stage 1: Fast OCR text extraction (7.5s max timeout)
+    const result = await analyzeImageWithGemini(capturedImageData);
+
+    let extractedCount = 0;
+    const nameInput = document.getElementById('componentNameInput');
+    if (result.productName && nameInput && !nameInput.value) {
+      nameInput.value = result.productName;
+    }
+
+    const ingInput = document.getElementById('componentIngredientsInput');
+    if (result.ingredients && Array.isArray(result.ingredients) && result.ingredients.length > 0) {
+      if (ingInput) {
+        ingInput.value = result.ingredients.join(', ');
+      }
+      extractedCount = result.ingredients.length;
+    }
+
+    // Stage 2: Instant Monash FODMAP & intolerance identification in the frontend
+    updateComponentPreview();
+
+    if (subText) subText.textContent = 'OCR scan complete!';
+
+    if (feedbackEl) {
+      if (extractedCount > 0) {
+        feedbackEl.innerHTML = `
+          <div class="p-2.5 rounded-lg bg-emerald-950/60 border border-emerald-500/40 text-xs text-emerald-300 flex items-center justify-between">
+            <span class="flex items-center gap-1.5 font-medium">
+              <span>✓</span> <span><strong>Stage 1 Complete:</strong> Extracted <strong>${extractedCount}</strong> ingredients from photo. Stage 2 FODMAP badges identified below!</span>
+            </span>
+          </div>
+        `;
+        showToast(`Extracted ${extractedCount} ingredients from label!`, 'success');
+      } else {
+        feedbackEl.innerHTML = `
+          <div class="p-2.5 rounded-lg bg-amber-950/60 border border-amber-500/40 text-xs text-amber-300 flex items-center justify-between gap-2">
+            <span class="flex items-center gap-1.5">
+              <span>ℹ️</span> <span>No clear ingredient text detected on photo. You can type ingredients manually in the box below.</span>
+            </span>
+          </div>
+        `;
+        showToast('No clear ingredients detected on photo. Please enter ingredients below.', 'info');
+      }
+    }
+  } catch (err) {
+    console.warn('OCR Scan error:', err);
+    if (subText) subText.textContent = 'Scan stopped';
+    if (feedbackEl) {
+      feedbackEl.innerHTML = `
+        <div class="p-3 rounded-lg bg-amber-950/60 border border-amber-500/40 text-xs text-amber-200 space-y-2">
+          <div class="flex items-center gap-1.5 font-semibold">
+            <span>⚠️</span> <span>Scan status: ${escapeHtml(err.message || 'Could not reach Vision AI')}</span>
+          </div>
+          <p class="text-[11px] text-amber-300">
+            You can type or paste ingredients directly into the ingredients field below. Live FODMAP classification will analyze them automatically.
+          </p>
+        </div>
+      `;
+    }
+    showToast(`Scan note: ${err.message || 'Could not complete scan'}. You can type ingredients manually!`, 'warning');
+  } finally {
+    if (statusEl) statusEl.classList.add('hidden');
+    if (btn) {
+      btn.disabled = false;
+      btn.classList.remove('opacity-50', 'cursor-not-allowed');
+    }
+  }
+}
+
+
+function updateComponentPreview() {
+  const text = document.getElementById('componentIngredientsInput')?.value || '';
+  const preview = document.getElementById('compAnalysisPreview');
+  if (!preview) return;
+
+  const rawList = text.split(/,|\n|;/).map(s => s.trim()).filter(Boolean);
+  if (rawList.length === 0) {
+    preview.innerHTML = `<span class="text-xs text-slate-500">Ingredient badges will appear here...</span>`;
+    return;
+  }
+
+  const analysis = analyzeAllIngredients(rawList);
+  preview.innerHTML = analysis.items.map(ing => renderIngredientBadge(ing)).join(' ');
+}
+
+function handleSaveComponent(e) {
+  e.preventDefault();
+  const name = document.getElementById('componentNameInput').value.trim();
+  const category = document.getElementById('componentCategorySelect').value;
+  const notes = document.getElementById('componentNotesInput').value.trim();
+  const rawText = document.getElementById('componentIngredientsInput').value;
+
+  const ingredients = rawText.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+
+  if (editingComponentId) {
+    const idx = appState.components.findIndex(x => x.id === editingComponentId);
+    if (idx !== -1) {
+      appState.components[idx] = {
+        ...appState.components[idx],
+        name,
+        category,
+        ingredients,
+        notes
+      };
+    }
+    editingComponentId = null;
+  } else {
+    const newComp = {
+      id: 'c_' + Date.now(),
+      name,
+      category,
+      ingredients,
+      notes
+    };
+    appState.components.unshift(newComp);
+  }
+
+  saveToLocalStorage();
+  closeModal();
+  renderFoodLists();
+}
+
+// D. RECIPE MODAL
+let editingRecipeId = null;
+
+function openRecipeModal(recipeId = null) {
+  editingRecipeId = recipeId;
+  const existing = recipeId ? appState.recipes.find(x => x.id === recipeId) : null;
+
+  const recipeName = existing ? existing.name : '';
+  const customIngs = existing ? (existing.customIngredients || []).join(', ') : '';
+  const recipeNotes = existing ? (existing.notes || '') : '';
+  const includedCompIds = existing ? (existing.componentIds || []) : [];
+
+  const container = document.getElementById('modalsContainer');
+  container.innerHTML = `
+    <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+        <div class="flex items-center justify-between border-b border-[#1f293d] pb-3">
+          <h3 class="text-lg font-bold text-white flex items-center gap-2">
+            <span>${existing ? '✏️' : '📖'}</span> <span>${existing ? 'Edit Recipe & Ingredients' : 'Create Recipe'}</span>
+          </h3>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <form id="recipeForm" onsubmit="handleSaveRecipe(event)" class="space-y-4">
+          <div>
+            <label class="text-xs text-slate-300 font-medium">Recipe Name</label>
+            <input type="text" id="recipeNameInput" value="${escapeHtml(recipeName)}" placeholder="e.g. Turkey Sourdough Sandwich" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" required />
+          </div>
+
+          <!-- Select from existing components -->
+          <div>
+            <label class="text-xs text-slate-300 font-medium mb-1.5 block">Included Components</label>
+            <div class="max-h-36 overflow-y-auto space-y-1.5 p-2 bg-[#0b0f19] rounded-xl border border-[#1f293d]">
+              ${appState.components.map(c => `
+                <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer p-1 rounded hover:bg-[#111827]">
+                  <input type="checkbox" name="recipeComponents" value="${c.id}" ${includedCompIds.includes(c.id) ? 'checked' : ''} class="rounded bg-slate-800 border-slate-700 text-emerald-500 focus:ring-0" />
+                  <span>${escapeHtml(c.name)} <span class="text-[10px] text-slate-500">(${c.category})</span></span>
+                </label>
+              `).join('')}
+              ${appState.components.length === 0 ? `<p class="text-xs text-slate-500 italic p-1">No components yet. Add some first or type individual ingredients below.</p>` : ''}
+            </div>
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-300 font-medium">Additional Ingredients (comma-separated)</label>
+            <input type="text" id="recipeCustomIngsInput" value="${escapeHtml(customIngs)}" placeholder="e.g. Baby spinach, cucumber, roast turkey" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" />
+          </div>
+
+          <div>
+            <label class="text-xs text-slate-300 font-medium">Notes / Instructions</label>
+            <input type="text" id="recipeNotesInput" value="${escapeHtml(recipeNotes)}" placeholder="e.g. Toast bread before assembling" class="w-full mt-1 bg-[#0b0f19] border border-[#1f293d] rounded-lg px-3 py-2 text-xs text-white" />
+          </div>
+
+          <div class="flex justify-end gap-2 pt-2 border-t border-[#1f293d]">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-lg bg-[#1f293d] text-slate-300 hover:text-white text-xs font-semibold">Cancel</button>
+            <button type="submit" class="px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold">${existing ? 'Update Recipe' : 'Save Recipe'}</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+function handleSaveRecipe(e) {
+  e.preventDefault();
+  const name = document.getElementById('recipeNameInput').value.trim();
+  const customIngsText = document.getElementById('recipeCustomIngsInput').value;
+  const notes = document.getElementById('recipeNotesInput').value.trim();
+
+  const checkedBoxes = document.querySelectorAll('input[name="recipeComponents"]:checked');
+  const componentIds = Array.from(checkedBoxes).map(cb => cb.value);
+
+  const customIngredients = customIngsText.split(/,|\n/).map(s => s.trim()).filter(Boolean);
+
+  if (editingRecipeId) {
+    const idx = appState.recipes.findIndex(x => x.id === editingRecipeId);
+    if (idx !== -1) {
+      appState.recipes[idx] = {
+        ...appState.recipes[idx],
+        name,
+        componentIds,
+        customIngredients,
+        notes
+      };
+    }
+    editingRecipeId = null;
+  } else {
+    const newRecipe = {
+      id: 'r_' + Date.now(),
+      name,
+      componentIds,
+      customIngredients,
+      notes
+    };
+    appState.recipes.unshift(newRecipe);
+  }
+
+  saveToLocalStorage();
+  closeModal();
+  renderFoodLists();
+}
+
+// E. DAY TIMELINE DETAIL MODAL
+function openDayTimelineModal(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const formattedHeader = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+  const meals = appState.meals.filter(m => m.timestamp.startsWith(dateStr));
+  const stools = appState.stools.filter(s => s.timestamp.startsWith(dateStr));
+
+  const combined = [
+    ...meals.map(m => ({ kind: 'meal', time: m.timestamp, data: m })),
+    ...stools.map(s => ({ kind: 'stool', time: s.timestamp, data: s }))
+  ].sort((a, b) => new Date(a.time) - new Date(b.time));
+
+  const container = document.getElementById('modalsContainer');
+  container.innerHTML = `
+    <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+      <div class="bg-[#111827] border border-[#1f293d] rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 my-8">
+        <div class="flex items-center justify-between border-b border-[#1f293d] pb-3">
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+              <span>📅</span> <span>Day Timeline: ${formattedHeader}</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">Chronological correlation between meals eaten and bowel movements</p>
+          </div>
+          <button onclick="closeModal()" class="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <div class="space-y-3 max-h-[65vh] overflow-y-auto pr-1">
+          ${combined.length === 0 ? `
+            <div class="text-center py-8 text-slate-400">
+              <p>No records for this day.</p>
+            </div>
+          ` : ''}
+
+          ${combined.map(item => {
+            if (item.kind === 'meal') {
+              const m = item.data;
+              const analysis = analyzeAllIngredients(m.rawIngredients || []);
+              return `
+                <div class="bg-[#0b0f19] border border-emerald-500/30 rounded-xl p-3.5 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                      <span>🍽️</span> <span>${formatTime(m.timestamp)} • ${m.type}</span>
+                    </span>
+                    <div class="flex items-center gap-2">
+                      <span class="text-[11px] px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-300">${analysis.overallSafety.toUpperCase()} RISK</span>
+                      <button onclick="closeModal(); openMealModal('${m.id}')" class="text-xs text-slate-400 hover:text-emerald-400 flex items-center gap-1 font-medium ml-2"><span>✏️</span> Edit</button>
+                    </div>
+                  </div>
+                  <h4 class="text-sm font-bold text-white">${escapeHtml(m.name)}</h4>
+                  ${m.notes ? `<p class="text-xs text-slate-400 italic">"${escapeHtml(m.notes)}"</p>` : ''}
+                  <div class="flex flex-wrap gap-1 pt-1">
+                    ${analysis.items.map(ing => renderIngredientBadge(ing)).join(' ')}
+                  </div>
+                </div>
+              `;
+            } else {
+              const s = item.data;
+              const b = BRISTOL_SCALE[s.bristolType] || {};
+              const isAbnormal = (s.bristolType <= 2 || s.bristolType >= 6);
+              return `
+                <div class="bg-[#140e10] border ${isAbnormal ? 'border-rose-500/40' : 'border-amber-500/30'} rounded-xl p-3.5 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                      <span>🚽</span> <span>${formatTime(s.timestamp)} • Bowel Movement</span>
+                    </span>
+                    <span class="text-[11px] px-2 py-0.5 rounded ${isAbnormal ? 'bg-rose-500/20 text-rose-300' : 'bg-emerald-500/20 text-emerald-300'} font-semibold">
+                      Bristol Type ${s.bristolType} (${b.category})
+                    </span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <span class="text-2xl">${b.icon}</span>
+                    <div>
+                      <h4 class="text-sm font-bold text-white">${b.name}</h4>
+                      <p class="text-xs text-slate-400">${b.desc}</p>
+                    </div>
+                  </div>
+                  <div class="flex flex-wrap gap-3 text-xs text-slate-300 pt-1 border-t border-[#1f293d]">
+                    <span>Urgency: <strong>${s.urgency}</strong></span>
+                    <span>Pain: <strong class="${s.pain >= 2 ? 'text-rose-400' : ''}">${s.pain}/4</strong></span>
+                    <span>Bloat: <strong>${s.bloat}/4</strong></span>
+                    <span>Color: <strong>${s.colorName}</strong></span>
+                  </div>
+                  ${s.notes ? `<p class="text-xs text-slate-300 italic">Notes: "${escapeHtml(s.notes)}"</p>` : ''}
+                </div>
+              `;
+            }
+          }).join('')}
+        </div>
+
+        <div class="flex justify-between items-center pt-3 border-t border-[#1f293d]">
+          <div class="flex gap-2">
+            <button onclick="closeModal(); openMealModal();" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-semibold">+ Add Meal</button>
+            <button onclick="closeModal(); openStoolModal();" class="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold">+ Add Stool</button>
+          </div>
+          <button type="button" onclick="closeModal()" class="px-4 py-1.5 rounded-lg bg-[#1f293d] text-slate-300 hover:text-white text-xs font-semibold">Close</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// 15. INITIALIZATION ON PAGE LOAD
+window.addEventListener('DOMContentLoaded', () => {
+  loadSampleDemoData(false);
+  switchTab('food');
+  setFoodSubTab('meals');
+});
+
+
+
+
+
+
+</script>
+</body>
+</html>
