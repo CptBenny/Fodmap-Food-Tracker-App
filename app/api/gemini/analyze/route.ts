@@ -85,8 +85,8 @@ If no food label or ingredient list is legible, respond with:
       },
     ];
 
-    // Priority: gemini-3.1-flash-lite (fastest, supports vision inlineData without delay), fallback to gemini-3.5-flash-lite
-    const candidateModels = ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite', 'gemini-flash-latest'];
+    // Priority: gemini-3.1-flash-lite (fastest, lightweight), fallback to gemini-3.8-flash, gemini-flash-latest, and gemini-2.5-flash
+    const candidateModels = ['gemini-3.1-flash-lite', 'gemini-3.8-flash', 'gemini-flash-latest', 'gemini-2.5-flash'];
     let response: any = null;
     let lastError: any = null;
 
@@ -100,15 +100,15 @@ If no food label or ingredient list is legible, respond with:
               responseMimeType: 'application/json',
             },
           }),
-          5500,
-          `Model ${model} timed out after 5.5s`
+          6500,
+          `Model ${model} timed out after 6.5s`
         );
         if (response?.text) {
           break;
         }
       } catch (err: any) {
         lastError = err;
-        console.warn(`Model ${model} failed, trying fallback:`, err?.message || err);
+        console.warn(`Model ${model} encountered error or high demand, trying next fallback:`, err?.message || err);
       }
     }
 

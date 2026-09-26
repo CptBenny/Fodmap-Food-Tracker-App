@@ -1,6 +1,6 @@
 {
-  "name": "IBS & Food Intolerance Tracker",
-  "description": "Self-contained IBS symptom and food intolerance tracker with Bristol stool logging, FODMAP analysis, Gemini label OCR, and interactive analytics.",
+  "name": "FODMAP Food Tracker",
+  "description": "FODMAP Food Tracker with food components, recipes, Bristol stool logging, and analytical correlation.",
   "requestFramePermissions": ["camera"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
