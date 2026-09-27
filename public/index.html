@@ -4,10 +4,10 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>FODMAP Food Tracker</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Tailwind CSS Standalone Bundle -->
+  <script src="js/tailwind.js"></script>
+  <!-- Chart.js Standalone Bundle -->
+  <script src="js/chart.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -1673,6 +1673,11 @@ function loadSampleDemoData(force = false) {
 
 // 6. GEMINI OCR LABEL SCANNER (DIRECT API CALL & FALLBACK ACCELERATION)
 async function analyzeImageWithGemini(base64Data, mimeType = 'image/jpeg') {
+  if (!navigator.onLine) {
+    alert("You are currently offline. Label scanning via camera/image requires an internet connection. Manual entry and FODMAP searches are still available offline.");
+    throw new Error("You are currently offline. Label scanning via camera/image requires an internet connection. Manual entry and FODMAP searches are still available offline.");
+  }
+
   const cleanBase64 = base64Data.replace(/^data:[^;]+;base64,/, '').trim();
   const apiKey = (appState.geminiApiKey || localStorage.getItem('gemini_api_key') || '').trim();
 
@@ -5879,6 +5884,13 @@ if (document.readyState === 'loading') {
 
 
 
+</script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(err => console.error('SW Error:', err));
+    });
+  }
 </script>
 </body>
 </html>
