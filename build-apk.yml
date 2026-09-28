@@ -1,0 +1,38 @@
+name: Build Offline APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Package Local HTML to APK
+        run: |
+          npm install -g cordova
+          cordova create build_app com.fodmap.app "FODMAP Tracker"
+          rm -rf build_app/www/*
+          cp -r public/* build_app/www/
+          cd build_app
+          cordova platform add android
+          cordova build android --no-telemetry
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FODMAP-Offline-APK
+          path: build_app/platforms/android/app/build/outputs/apk/debug/app-debug.apk
