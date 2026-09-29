@@ -21,7 +21,7 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
         with:
-          packages: '' # Skips downloading deprecated 'tools' package
+          packages: ''
 
       - name: Build Cordova APK
         run: |
@@ -31,7 +31,7 @@ jobs:
           # Clean out default Cordova files
           rm -rf build_app/www/*
           
-          # Check if files exist in public, otherwise copy from root
+          # Copy application files
           if [ -d "public" ]; then
             cp -r public/* build_app/www/
           else
@@ -39,7 +39,12 @@ jobs:
           fi
           
           cd build_app
+          
+          # Allow outbound API requests (Gemini OCR, CDNs, etc.)
+          sed -i 's#</widget>#  <access origin="*" />\n  <allow-navigation href="*" />\n  <allow-intent href="*" />\n</widget>#' config.xml
+          
           cordova platform add android
+          cordova plugin add cordova-plugin-whitelist
           cordova build android --no-telemetry
 
       - name: Upload APK Artifact
